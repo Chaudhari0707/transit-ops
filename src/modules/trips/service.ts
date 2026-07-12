@@ -7,6 +7,10 @@ import { requireAnyRole } from "@/lib/api/session";
 import { getDb } from "@/lib/db/client";
 import { drivers, expenses, fuelLogs, locations, trips, vehicles } from "@/lib/db/schema";
 import {
+  fetchAssignableDrivers,
+  fetchAssignableVehicles,
+} from "@/modules/trips/_lib/assignable-queries";
+import {
   assertCargoWithinCapacity,
   assertDriverAssignable,
   assertEndOdometerValid,
@@ -74,6 +78,41 @@ async function requireActiveLocations(sourceLocationId: string, destinationLocat
 }
 
 export abstract class TripsService {
+  static async listAssignableVehicles(actor: SessionUser) {
+    requireAnyRole(actor, TRIP_WRITE_ROLES);
+
+    const rows = await fetchAssignableVehicles(getDb());
+
+    return {
+      vehicles: rows.map((row) => ({
+        id: row.id,
+        registrationNumber: row.registrationNumber,
+        nameModel: row.nameModel,
+        maxLoadCapacityKg: row.maxLoadCapacityKg,
+        odometerKm: row.odometerKm,
+        status: row.status as "available",
+      })),
+    };
+  }
+
+  static async listAssignableDrivers(actor: SessionUser) {
+    requireAnyRole(actor, TRIP_WRITE_ROLES);
+
+    const rows = await fetchAssignableDrivers(getDb(), todayIsoDate());
+
+    return {
+      drivers: rows.map((row) => ({
+        id: row.id,
+        fullName: row.fullName,
+        licenseNumber: row.licenseNumber,
+        licenseExpiryDate: row.licenseExpiryDate,
+        contactNumber: row.contactNumber,
+        safetyScore: row.safetyScore,
+        status: row.status as "available",
+      })),
+    };
+  }
+
   static async list(actor: SessionUser, status?: TripStatus) {
     requireAnyRole(actor, TRIP_READ_ROLES);
 

@@ -11,6 +11,48 @@ const DISPATCH_ERRORS = [400, 401, 403, 404, 409] as const;
 
 export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   .get(
+    "/assignables/vehicles",
+    async ({ cookie, status }) => {
+      try {
+        const actor = await requireUser(cookie.session);
+        return await TripsService.listAssignableVehicles(actor);
+      } catch (error) {
+        const message = errorMessage(error, "Unable to list assignable vehicles");
+        return status(resolveErrorCodeFor(message, READ_ERRORS), { message });
+      }
+    },
+    {
+      response: {
+        200: TripsModel.assignableVehiclesResponse,
+        400: TripsModel.errorResponse,
+        401: TripsModel.errorResponse,
+        403: TripsModel.errorResponse,
+        404: TripsModel.errorResponse,
+      },
+    },
+  )
+  .get(
+    "/assignables/drivers",
+    async ({ cookie, status }) => {
+      try {
+        const actor = await requireUser(cookie.session);
+        return await TripsService.listAssignableDrivers(actor);
+      } catch (error) {
+        const message = errorMessage(error, "Unable to list assignable drivers");
+        return status(resolveErrorCodeFor(message, READ_ERRORS), { message });
+      }
+    },
+    {
+      response: {
+        200: TripsModel.assignableDriversResponse,
+        400: TripsModel.errorResponse,
+        401: TripsModel.errorResponse,
+        403: TripsModel.errorResponse,
+        404: TripsModel.errorResponse,
+      },
+    },
+  )
+  .get(
     "/",
     async ({ cookie, query, status }) => {
       try {

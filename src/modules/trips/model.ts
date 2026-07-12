@@ -91,4 +91,46 @@ export const TripsModel = {
   idParams: t.Object({
     id: t.String({ format: "uuid" }),
   }),
+  assignableVehicle: t.Object({
+    id: t.String({ format: "uuid" }),
+    registrationNumber: t.String(),
+    nameModel: t.String(),
+    maxLoadCapacityKg: t.String(),
+    odometerKm: t.String(),
+    status: t.Literal("available"),
+  }),
+  assignableDriver: t.Object({
+    id: t.String({ format: "uuid" }),
+    fullName: t.String(),
+    licenseNumber: t.String(),
+    licenseExpiryDate: t.String({ format: "date" }),
+    contactNumber: t.String(),
+    safetyScore: t.Number(),
+    status: t.Literal("available"),
+  }),
+  assignableVehiclesResponse: t.Object({
+    vehicles: t.Array(
+      t.Object({
+        id: t.String({ format: "uuid" }),
+        registrationNumber: t.String(),
+        nameModel: t.String(),
+        maxLoadCapacityKg: t.String(),
+        odometerKm: t.String(),
+        status: t.Literal("available"),
+      }),
+    ),
+  }),
+  assignableDriversResponse: t.Object({
+    drivers: t.Array(
+      t.Object({
+        id: t.String({ format: "uuid" }),
+        fullName: t.String(),
+        licenseNumber: t.String(),
+        licenseExpiryDate: t.String({ format: "date" }),
+        contactNumber: t.String(),
+        safetyScore: t.Number(),
+        status: t.Literal("available"),
+      }),
+    ),
+  }),
 } as const;
