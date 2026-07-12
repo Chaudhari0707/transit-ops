@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -22,7 +24,7 @@
   --border: oklch(0.9022 0.0052 247.8822);
   --input: oklch(0.97 0.0029 264.542);
   --ring: oklch(0.6397 0.172 36.4421);
-  --chart-1: oklch(0.7156 0.0605 248.6845);
+  --chart-1: oklch(0.6397 0.172 36.4421);
   --chart-2: oklch(0.7875 0.0917 35.9616);
   --chart-3: oklch(0.5778 0.0759 254.1573);
   --chart-4: oklch(0.5016 0.0849 259.4902);
@@ -161,6 +163,10 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+  --font-heading: var(--font-sans);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
@@ -169,5 +175,17 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .landing-grid {
+    background-image:
+      linear-gradient(to right, oklch(0.6397 0.172 36.4421 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.6397 0.172 36.4421 / 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 }
