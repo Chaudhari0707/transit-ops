@@ -46,7 +46,7 @@ const NAV_MAIN_CATALOG: Array<{
   {
     id: "trips",
     title: "Trips",
-    url: "#",
+    url: "/trips",
     icon: <RouteIcon />,
   },
   {

@@ -47,6 +47,7 @@ export function canCreateTrip(role: UserRole): boolean {
 
 const PAGE_ACCESS_ROLES: Record<PageModuleId, readonly UserRole[]> = {
   dashboard: ["fleet_manager", "dispatcher", "safety_officer", "financial_analyst"],
+  trips: ["dispatcher", "safety_officer"],
   drivers: ["fleet_manager", "safety_officer"],
   vehicles: ["fleet_manager", "dispatcher", "financial_analyst"],
   maintenance: ["fleet_manager", "financial_analyst"],

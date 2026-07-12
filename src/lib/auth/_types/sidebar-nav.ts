@@ -1,5 +1,11 @@
 /** Page-level module access keys (aligned with module assert* rules). */
-export type PageModuleId = "dashboard" | "drivers" | "fuel_expenses" | "maintenance" | "vehicles";
+export type PageModuleId =
+  | "dashboard"
+  | "drivers"
+  | "fuel_expenses"
+  | "maintenance"
+  | "trips"
+  | "vehicles";
 
 /** Stable nav keys used by the app shell sidebar. */
 export type SidebarNavId =

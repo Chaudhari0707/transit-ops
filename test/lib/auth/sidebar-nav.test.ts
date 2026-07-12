@@ -90,15 +90,18 @@ describe("page module access", () => {
     expect(canAccessPageModule("dispatcher", "fuel_expenses")).toBe(false);
     expect(canAccessPageModule("dispatcher", "vehicles")).toBe(true);
     expect(canAccessPageModule("dispatcher", "dashboard")).toBe(true);
+    expect(canAccessPageModule("dispatcher", "trips")).toBe(true);
   });
 
   test("safety_officer cannot open vehicles page", () => {
     expect(canAccessPageModule("safety_officer", "vehicles")).toBe(false);
     expect(canAccessPageModule("safety_officer", "drivers")).toBe(true);
+    expect(canAccessPageModule("safety_officer", "trips")).toBe(true);
   });
 
   test("fleet_manager may access fuel page even when Fuel nav is hidden", () => {
     expect(canSeeNavItem("fleet_manager", "fuel_expenses")).toBe(false);
     expect(canAccessPageModule("fleet_manager", "fuel_expenses")).toBe(true);
+    expect(canAccessPageModule("fleet_manager", "trips")).toBe(false);
   });
 });

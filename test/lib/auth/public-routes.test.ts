@@ -34,6 +34,7 @@ describe("isProtectedAppPath", () => {
     expect(isProtectedAppPath("/drivers")).toBe(true);
     expect(isProtectedAppPath("/maintenance")).toBe(true);
     expect(isProtectedAppPath("/fuel-expenses")).toBe(true);
+    expect(isProtectedAppPath("/trips")).toBe(true);
   });
 
   test("does not mark public paths", () => {

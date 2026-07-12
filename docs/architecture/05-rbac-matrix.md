@@ -34,12 +34,12 @@ Mockup login access notes (aligned):
 
 ### Fleet Manager
 
-- Vehicles full CRUD/retire; drivers full edit; maintenance open/close; masters; users via Better Auth; analytics incl. **fuel+maintenance op cost**; documents.
+- Vehicles full CRUD/retire; drivers full edit; maintenance open/close; masters; users via Better Auth; analytics incl. **fuel+maintenance op cost**, **monthly revenue**, **vehicle ROI**; documents.
 - **Cannot:** trip lifecycle; manual fuel/expense writes.
 
 ### Dispatcher
 
-- Vehicle view; trip full lifecycle; complete with odometer+fuel; dashboard.
+- Vehicle view; trip full lifecycle; complete with odometer+fuel+expenses (**auto revenue_log** on complete); dashboard.
 - **Cannot:** driver admin, maintenance write, fuel/expense screens, analytics deep, users.
 
 ### Safety Officer
@@ -49,8 +49,8 @@ Mockup login access notes (aligned):
 
 ### Financial Analyst
 
-- Vehicle view; fuel logs full write; expenses (toll/misc) full write; maintenance **view costs**; analytics (op cost = fuel+maintenance, efficiency, CSV); static ROI placeholders if shown.
-- **Cannot:** trip mutations, driver edits, vehicle writes, masters, users.
+- Vehicle view; fuel logs full write; expenses (toll/misc) full write; maintenance **view costs**; analytics (op cost = fuel+maintenance, efficiency, **monthly revenue from `revenue_logs`**, **vehicle ROI**, CSV). Revenue is **read-only** for Finance (written only by trip complete).
+- **Cannot:** trip mutations, driver edits, vehicle writes, masters, users; cannot manually create/edit `revenue_logs`.
 
 ## Login
 

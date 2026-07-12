@@ -37,13 +37,14 @@ Hackathon: **no Settings screen**. Hardcode in app constants:
 2. **Master data** — vehicle types, license categories, expense categories, maintenance types (**no regions**)
 3. **Fleet (Vehicles)** — registry + status
 4. **Drivers** — profiles, license compliance, safety score; trip-completion % derived on the fly (not stored)
-5. **Trips** — location FK source/destination (dropdown); complete = odometer + fuel_log + expenses + free vehicle/driver
+5. **Trips** — location FK source/destination (dropdown); complete = odometer + fuel_log + expenses + **revenue_log** + free vehicle/driver
 6. **Locations** — logistics hubs for trip endpoints; seeded master list; fleet manager can add more
 7. **Maintenance** — open/close; vehicle In Shop; costs roll into operational cost
 8. **Fuel & Expenses** — fuel logs; toll/misc expenses; maintenance **linked in UI** (not double-stored as expense rows)
-9. **Documents** — attachment metadata (ENV upload limits)
-10. **Notifications** — outbox table; cron later
-11. **Dashboard & Analytics** — KPIs; filters vehicle type + status only; CSV export; ROI/revenue **static placeholders**
+9. **Revenue** — trip-earned income logged on complete (`revenue_logs`); feeds monthly charts + vehicle ROI
+10. **Documents** — attachment metadata (ENV upload limits)
+11. **Notifications** — outbox table; cron later
+12. **Dashboard & Analytics** — KPIs; filters vehicle type + status only; CSV export; **monthly revenue + vehicle ROI from `revenue_logs`**
 
 ## Entity map (logical)
 
@@ -58,6 +59,7 @@ trips ──► vehicles, drivers, locations (source + destination), user(create
 maintenance_logs ──► vehicles, maintenance_types, user
 fuel_logs ──► vehicles, trips?, user
 expenses ──► vehicles, expense_categories, trips?, user   # toll/misc only
+revenue_logs ──► trips (1:1), vehicles, user              # auto on trip complete
 documents ──► vehicle | maintenance_log
 notification_outbox ──► later worker
 ```
@@ -67,13 +69,13 @@ notification_outbox ──► later worker
 | Class           | Tables                                                                                            | PK                            |
 | --------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- |
 | Public / config | Better Auth `user` (+ session/account/verification), masters, vehicles, drivers, trips, documents | UUID / Better Auth string ids |
-| Logs            | fuel_logs, expenses, maintenance_logs, notification_outbox                                        | bigserial                     |
+| Logs            | fuel_logs, expenses, maintenance_logs, revenue_logs, notification_outbox                          | bigserial                     |
 
 ## Soft delete
 
-| Soft-delete                                                               | Immutable / library-managed                                                                          |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| vehicles, drivers, trips, masters, documents; user.is_active / deleted_at | fuel_logs, expenses, maintenance_logs, notification_outbox; Better Auth session/account/verification |
+| Soft-delete                                                               | Immutable / library-managed                                                                                        |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| vehicles, drivers, trips, masters, documents; user.is_active / deleted_at | fuel_logs, expenses, maintenance_logs, revenue_logs, notification_outbox; Better Auth session/account/verification |
 
 ## Out of scope (v1 hackathon)
 
@@ -82,6 +84,6 @@ notification_outbox ──► later worker
 - Multi-currency / Settings screen (static INR + km)
 - **Regions table, region FKs, region dashboard filter** (cancelled)
 - Driver **trip completion %** field
-- Real **revenue / ROI** (static demo only; later task)
+- Configurable multi-tier freight rates / customer contracts (v1 uses one app constant rate)
 - Notification cron worker
 - Field-driver mobile login (optional `drivers.user_id` only)

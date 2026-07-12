@@ -12,6 +12,7 @@ const PROTECTED_ROUTES = [
   "/drivers",
   "/maintenance",
   "/fuel-expenses",
+  "/trips",
 ] as const;
 
 test.describe("route protection (unauthenticated)", () => {

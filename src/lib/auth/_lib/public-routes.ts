@@ -31,6 +31,7 @@ export const PROTECTED_APP_ROUTES = [
   "/drivers",
   "/maintenance",
   "/fuel-expenses",
+  "/trips",
 ] as const;
 
 export function isProtectedAppPath(pathname: string): boolean {
