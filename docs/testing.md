@@ -36,10 +36,10 @@ Auth E2E uses Better Auth sign-in UI — see `.agents/auth.md`. Legacy API sign-
 
 ### Projects
 
-| Project                            | Specs              | Requires DB        |
-| ---------------------------------- | ------------------ | ------------------ |
-| `chromium`                         | `smoke.spec.ts`    | No                 |
-| `setup` + `chromium-authenticated` | `auth-api.spec.ts` | Yes (seeded admin) |
+| Project                            | Specs                                 | Requires DB                  |
+| ---------------------------------- | ------------------------------------- | ---------------------------- |
+| `chromium`                         | `smoke.spec.ts`                       | No                           |
+| `setup` + `chromium-authenticated` | `auth-api.spec.ts`, `drivers.spec.ts` | Yes (seeded admin + drivers) |
 
 ### Runbook
 

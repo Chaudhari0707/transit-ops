@@ -40,7 +40,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
       },
       dependencies: ["setup"],
-      testMatch: /auth-session\.spec\.ts/,
+      testMatch: /(?:auth-session|drivers)\.spec\.ts/,
     },
   ],
   webServer: {
