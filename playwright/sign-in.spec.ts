@@ -64,7 +64,7 @@ test.describe("sign-in auth flows", () => {
     await gotoSignIn(page);
     await fillSignInForm(page, {
       email: runtime.adminEmail,
-      password: runtime.adminPassword ?? "ChangeMe123!",
+      password: runtime.adminPassword ?? "password",
       role: "dispatcher",
     });
     await submitSignIn(page, { waitForAuthResponse: true });
@@ -77,7 +77,7 @@ test.describe("sign-in auth flows", () => {
     await gotoSignIn(page);
     await fillSignInForm(page, {
       email: runtime.adminEmail,
-      password: runtime.adminPassword ?? "ChangeMe123!",
+      password: runtime.adminPassword ?? "password",
       role: "fleet_manager",
     });
     await submitSignIn(page, { waitForAuthResponse: true });

@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 describe("password hashing", () => {
   test("verifies a password against its hash", async () => {
-    const password = "ChangeMe123!";
+    const password = "password";
     const hash = await hashPassword(password);
 
     expect(await verifyPassword({ password, hash })).toBe(true);
