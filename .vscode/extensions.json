@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "oven.bun-vscode",
+    "formulahendry.auto-rename-tag",
+    "naumovs.color-highlight",
+    "dsznajder.es7-react-js-snippets",
+    "GitHub.vscode-pull-request-github",
+    "oxc.oxc-vscode",
+    "ms-playwright.playwright",
+    "vscode-icons-team.vscode-icons",
+    "uctakeoff.vscode-counter"
+  ]
+}
