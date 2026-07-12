@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "clean": "bun exec 'rm -rf .next node_modules'",
+    "cln": "bun exec 'rm -rf .next node_modules' && bun install && bun dev",
     "lint": "eslint src --no-warn-ignored",
     "lint:fix": "eslint src --fix --no-warn-ignored",
     "format": "prettier --write .",
