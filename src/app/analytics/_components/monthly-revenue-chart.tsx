@@ -25,12 +25,12 @@ export function MonthlyRevenueChart({ points }: MonthlyRevenueChartProps) {
   }));
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Monthly revenue</CardTitle>
+    <Card className="w-full self-start">
+      <CardHeader>
+        <CardTitle>Monthly Revenue</CardTitle>
         <CardDescription>Static demo series (ADR-050) — not live bookings</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent>
         <ChartContainer config={chartConfig} className="aspect-auto h-55 w-full">
           <BarChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />

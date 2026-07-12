@@ -108,4 +108,19 @@ export const FuelExpensesModel = {
       }),
     ),
   }),
+  tripOptionsResponse: t.Object({
+    items: t.Array(
+      t.Object({
+        id: t.String({ format: "uuid" }),
+        vehicleId: t.String({ format: "uuid" }),
+        vehicleRegistration: t.String(),
+        vehicleNameModel: t.String(),
+        destinationName: t.String(),
+        driverName: t.String(),
+        tripDate: t.String(),
+        status: t.Union([t.Literal("dispatched"), t.Literal("completed")]),
+        label: t.String(),
+      }),
+    ),
+  }),
 } as const;

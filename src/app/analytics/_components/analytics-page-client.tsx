@@ -112,29 +112,34 @@ export function AnalyticsPageClient() {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 lg:gap-6 lg:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">Reports &amp; Analytics</h2>
-          <p className="text-sm text-muted-foreground">{report.summary.roiFormula}</p>
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <AnalyticsKpiCards summary={report.summary} />
+
+        <div className="flex flex-col gap-4 px-4 lg:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{report.summary.roiFormula}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              onClick={() => void handleExport()}
+            >
+              <DownloadIcon className="size-4" />
+              {exporting ? "Exporting…" : "Export CSV"}
+            </Button>
+          </div>
+
+          <div className="grid items-start gap-4 lg:grid-cols-5">
+            <div className="lg:col-span-3">
+              <MonthlyRevenueChart points={report.monthlyRevenue} />
+            </div>
+            <div className="lg:col-span-2">
+              <CostliestVehicles items={report.costliestVehicles} />
+            </div>
+          </div>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={exporting}
-          onClick={() => void handleExport()}
-        >
-          <DownloadIcon className="size-4" />
-          {exporting ? "Exporting…" : "Export CSV"}
-        </Button>
-      </div>
-
-      <AnalyticsKpiCards summary={report.summary} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <MonthlyRevenueChart points={report.monthlyRevenue} />
-        <CostliestVehicles items={report.costliestVehicles} />
       </div>
     </div>
   );

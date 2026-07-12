@@ -24,15 +24,15 @@ export default async function AnalyticsPage() {
         user={{ email: session.email, name: session.name, role: session.role }}
       />
       <SidebarInset>
-        <SiteHeader title="Analytics" roleLabel="Fleet / Finance" />
+        <SiteHeader title="Reports & Analytics" roleLabel="Fleet / Finance" />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2 py-4 md:gap-6 md:py-6">
-            {allowed ? (
-              <AnalyticsPageClient />
-            ) : (
+          {allowed ? (
+            <AnalyticsPageClient />
+          ) : (
+            <div className="@container/main flex flex-1 flex-col gap-2 py-4 md:gap-6 md:py-6">
               <AccessDenied description="Analytics is available to Fleet Managers and Financial Analysts only." />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </SidebarInset>
     </SidebarProvider>

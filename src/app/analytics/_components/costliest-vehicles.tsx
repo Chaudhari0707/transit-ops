@@ -16,7 +16,7 @@ function formatInr(value: string): string {
 
 const BAR_COLORS = [
   "bg-rose-400",
-  "bg-amber-600",
+  "bg-amber-500",
   "bg-sky-500",
   "bg-violet-500",
   "bg-emerald-500",
@@ -30,36 +30,35 @@ export function CostliestVehicles({ items }: CostliestVehiclesProps) {
   const maxCost = items.reduce((max, row) => Math.max(max, Number(row.operationalCostInr) || 0), 0);
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Top costliest vehicles</CardTitle>
+    <Card className="w-full self-start">
+      <CardHeader>
+        <CardTitle>Top Costliest Vehicles</CardTitle>
         <CardDescription>Operational cost = fuel + maintenance per vehicle</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col justify-center gap-4">
+      <CardContent className="space-y-4">
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">No fuel or maintenance costs logged yet.</p>
         ) : (
           items.map((item, index) => {
             const cost = Number(item.operationalCostInr) || 0;
-            const widthPct = maxCost > 0 ? Math.max(6, (cost / maxCost) * 100) : 0;
+            const widthPct = maxCost > 0 ? Math.round((cost / maxCost) * 100) : 0;
             const color = BAR_COLORS[index % BAR_COLORS.length];
 
             return (
-              <div
-                key={item.vehicleId}
-                className="grid grid-cols-[7rem_1fr_auto] items-center gap-3"
-              >
-                <div className="truncate text-sm font-medium" title={item.vehicleRegistration}>
-                  {item.vehicleRegistration}
+              <div key={item.vehicleId} className="space-y-2">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="truncate text-muted-foreground" title={item.vehicleRegistration}>
+                    {item.vehicleRegistration}
+                  </span>
+                  <span className="shrink-0 font-medium tabular-nums">
+                    {formatInr(item.operationalCostInr)}
+                  </span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-muted">
+                <div className="h-2.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className={`h-full rounded-full ${color}`}
+                    className={`h-full rounded-full transition-all ${color}`}
                     style={{ width: `${widthPct}%` }}
                   />
-                </div>
-                <div className="text-sm text-muted-foreground tabular-nums">
-                  {formatInr(item.operationalCostInr)}
                 </div>
               </div>
             );

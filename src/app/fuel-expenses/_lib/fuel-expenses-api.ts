@@ -5,6 +5,7 @@ import type {
   FuelLogUi,
   OperationalSummaryUi,
   OtherExpenseRowUi,
+  TripOption,
   VehicleOption,
 } from "@/app/fuel-expenses/_types/fuel-expenses-ui";
 
@@ -53,6 +54,12 @@ export async function fetchVehicles(): Promise<VehicleOption[]> {
   return data.items;
 }
 
+export async function fetchTripOptions(): Promise<TripOption[]> {
+  const response = await fetch("/api/fuel-expenses/trips", { credentials: "include" });
+  const data = await parseJson<{ items: TripOption[] }>(response);
+  return data.items;
+}
+
 export async function createFuelLog(form: FuelFormState): Promise<void> {
   const response = await fetch("/api/fuel-expenses/fuel-logs", {
     method: "POST",
@@ -60,6 +67,7 @@ export async function createFuelLog(form: FuelFormState): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       vehicleId: form.vehicleId,
+      tripId: form.tripId.trim() || null,
       liters: Number(form.liters),
       costInr: Number(form.costInr),
       loggedAt: form.loggedAt,
@@ -77,6 +85,7 @@ export async function createExpense(form: ExpenseFormState): Promise<void> {
     body: JSON.stringify({
       vehicleId: form.vehicleId,
       expenseCategoryId: form.expenseCategoryId,
+      tripId: form.tripId.trim() || null,
       amountInr: Number(form.amountInr),
       incurredOn: form.incurredOn,
       description: form.description.trim() || null,

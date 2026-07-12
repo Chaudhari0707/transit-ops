@@ -143,7 +143,7 @@ export abstract class AnalyticsService {
     }
 
     costliestCandidates.sort((a, b) => Number(b.operationalCostInr) - Number(a.operationalCostInr));
-    const costliestVehicles = costliestCandidates.slice(0, 5);
+    const costliestVehicles = costliestCandidates.slice(0, 3);
 
     const fuelTotal = Number(fuelAgg?.totalCost ?? 0);
     const fuelLiters = Number(fuelAgg?.totalLiters ?? 0);

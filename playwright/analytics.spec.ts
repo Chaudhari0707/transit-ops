@@ -59,12 +59,12 @@ test.describe("Analytics UI", () => {
     await expect(page.getByRole("heading", { name: /Reports & Analytics/i })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(/Fuel efficiency/i).first()).toBeVisible();
-    await expect(page.getByText(/Fleet utilization/i).first()).toBeVisible();
-    await expect(page.getByText(/Operational cost/i).first()).toBeVisible();
+    await expect(page.getByText(/Fuel Efficiency/i).first()).toBeVisible();
+    await expect(page.getByText(/Fleet Utilization/i).first()).toBeVisible();
+    await expect(page.getByText(/Operational Cost/i).first()).toBeVisible();
     await expect(page.getByText(/Vehicle ROI/i).first()).toBeVisible();
-    await expect(page.getByText(/Monthly revenue/i)).toBeVisible();
-    await expect(page.getByText(/Top costliest vehicles/i)).toBeVisible();
+    await expect(page.getByText(/Monthly Revenue/i)).toBeVisible();
+    await expect(page.getByText(/Top Costliest Vehicles/i)).toBeVisible();
     await expect(page.getByRole("button", { name: /Export CSV/i })).toBeVisible();
   });
 });

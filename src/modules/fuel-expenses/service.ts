@@ -26,6 +26,10 @@ import {
   normalizePositiveAmount,
   normalizePositiveLiters,
 } from "@/modules/fuel-expenses/_lib/rules";
+import {
+  fetchFuelExpenseTripOptions,
+  resolveTripLink,
+} from "@/modules/fuel-expenses/_lib/trip-options";
 import type {
   CreateExpenseInput,
   CreateFuelLogInput,
@@ -139,7 +143,7 @@ export abstract class FuelExpensesService {
     const costInr = normalizeNonNegativeAmount(body.costInr, "costInr");
     const loggedAt = normalizeDateOnly(body.loggedAt, "loggedAt");
     const notes = body.notes?.trim() ? body.notes.trim() : null;
-    const tripId = body.tripId?.trim() ? body.tripId.trim() : null;
+    const requestedTripId = body.tripId?.trim() ? body.tripId.trim() : null;
 
     const db = getDb();
 
@@ -152,6 +156,8 @@ export abstract class FuelExpensesService {
     if (!vehicle || vehicle.deletedAt) {
       throw new Error("Vehicle not found");
     }
+
+    const tripId = await resolveTripLink(db, requestedTripId, vehicle.id);
 
     if (tripId) {
       const [existing] = await db
@@ -225,7 +231,7 @@ export abstract class FuelExpensesService {
     const amountInr = normalizePositiveAmount(body.amountInr, "amountInr");
     const incurredOn = normalizeDateOnly(body.incurredOn, "incurredOn");
     const description = body.description?.trim() ? body.description.trim() : null;
-    const tripId = body.tripId?.trim() ? body.tripId.trim() : null;
+    const requestedTripId = body.tripId?.trim() ? body.tripId.trim() : null;
 
     const db = getDb();
 
@@ -238,6 +244,8 @@ export abstract class FuelExpensesService {
     if (!vehicle || vehicle.deletedAt) {
       throw new Error("Vehicle not found");
     }
+
+    const tripId = await resolveTripLink(db, requestedTripId, vehicle.id);
 
     const [category] = await db
       .select({
@@ -426,5 +434,15 @@ export abstract class FuelExpensesService {
       .orderBy(vehicles.registrationNumber);
 
     return { items };
+  }
+
+  /**
+   * Trip picker for fuel/expense forms. FA/FM only — not the full trips module.
+   * Labels: vehicle · date · destination · driver (never raw trip UUIDs).
+   */
+  static async listTripOptions(headers: Headers) {
+    const actor = await requireSessionUser(headers);
+    assertFuelExpenseReadRole(actor.role);
+    return { items: await fetchFuelExpenseTripOptions(getDb()) };
   }
 }
