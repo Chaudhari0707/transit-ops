@@ -395,36 +395,32 @@ function lookupExpenseCategoryId(sql: SqlClient, code: string) {
   });
 }
 
-/** Fuel logs + toll/misc expenses for Fuel & Expense screen (MAINT linked from closed logs). */
+/**
+ * Manual fuel/expense samples for Finance UI (trip-linked logs come from seedSampleTrips).
+ * Keep liters modest so fleet efficiency stays realistic (~8 km/L with completed trips).
+ */
 function seedFuelAndExpenses(sql: SqlClient, createdByUserId: string) {
   return Effect.gen(function* () {
     const van05Id = yield* lookupVehicleId(sql, "GJ-01-VA-1005");
-    const truck12Id = yield* lookupVehicleId(sql, "GJ-06-TK-1212");
     const van03Id = yield* lookupVehicleId(sql, "GJ-01-VA-1003");
-    const tollId = yield* lookupExpenseCategoryId(sql, "TOLL");
+    const fineId = yield* lookupExpenseCategoryId(sql, "FINE");
     const miscId = yield* lookupExpenseCategoryId(sql, "MISC");
 
+    // Small manual top-ups only — completed-trip fuel carries most distance/efficiency.
     const fuelSeeds = [
       {
         vehicleId: van05Id,
-        liters: "42.000",
-        costInr: "3150.00",
+        liters: "6.000",
+        costInr: "450.00",
         loggedAt: "2026-07-05",
-        notes: "Van-05 city fill",
-      },
-      {
-        vehicleId: truck12Id,
-        liters: "110.000",
-        costInr: "8400.00",
-        loggedAt: "2026-07-06",
-        notes: "Truck-12 Surat corridor",
+        notes: "Van-05 city top-up (manual)",
       },
       {
         vehicleId: van03Id,
-        liters: "28.000",
-        costInr: "2050.00",
+        liters: "4.000",
+        costInr: "300.00",
         loggedAt: "2026-07-06",
-        notes: "Van-03 hub shuttle",
+        notes: "Van-03 hub top-up (manual)",
       },
     ] as const;
 
@@ -460,24 +456,17 @@ function seedFuelAndExpenses(sql: SqlClient, createdByUserId: string) {
     const expenseSeeds = [
       {
         vehicleId: van05Id,
-        categoryId: tollId,
+        categoryId: miscId,
         amountInr: "120.00",
         incurredOn: "2026-07-05",
-        description: "Expressway toll Van-05",
+        description: "Parking / misc Van-05 (manual)",
       },
       {
-        vehicleId: truck12Id,
-        categoryId: tollId,
-        amountInr: "340.00",
+        vehicleId: van03Id,
+        categoryId: fineId,
+        amountInr: "500.00",
         incurredOn: "2026-07-06",
-        description: "Toll Truck-12 corridor",
-      },
-      {
-        vehicleId: truck12Id,
-        categoryId: miscId,
-        amountInr: "150.00",
-        incurredOn: "2026-07-06",
-        description: "Parking / misc Truck-12",
+        description: "Traffic fine Van-03 (manual)",
       },
     ] as const;
 
@@ -516,13 +505,13 @@ function seedFuelAndExpenses(sql: SqlClient, createdByUserId: string) {
       });
     }
 
-    yield* Console.log("   ✓ fuel_logs (3) + expenses toll/misc (3)");
+    yield* Console.log("   ✓ fuel_logs manual (2) + expenses fine/misc (2)");
   });
 }
 
 function lookupIdByCode(
   sql: SqlClient,
-  tableName: "locations" | "expense_categories",
+  tableName: "expense_categories" | "locations",
   code: string,
 ) {
   return Effect.tryPromise({
@@ -547,8 +536,120 @@ function lookupIdByCode(
   });
 }
 
+/** Soft-delete absurd completed trips (e.g. bad manual complete tests) that break efficiency KPIs. */
+function cleanupBadAnalyticsTrips(sql: SqlClient) {
+  return Effect.tryPromise({
+    try: () =>
+      sql`
+        UPDATE trips
+        SET deleted_at = NOW(), updated_at = NOW()
+        WHERE deleted_at IS NULL
+          AND status = 'completed'
+          AND actual_distance_km IS NOT NULL
+          AND actual_distance_km > 5000
+      `,
+    catch: (error) => new Error(getErrorMessage(error, "Failed to cleanup bad analytics trips.")),
+  });
+}
+
+/** Drop superseded high-liter manual fuel rows so trip-linked efficiency stays realistic. */
+function cleanupLegacyManualFuel(sql: SqlClient) {
+  return Effect.tryPromise({
+    try: () =>
+      sql`
+        DELETE FROM fuel_logs
+        WHERE trip_id IS NULL
+          AND notes IN (
+            'Van-05 city fill',
+            'Truck-12 Surat corridor',
+            'Van-03 hub shuttle',
+            'Van-05 city top-up (manual)',
+            'Van-03 hub top-up (manual)'
+          )
+      `,
+    catch: (error) =>
+      new Error(getErrorMessage(error, "Failed to cleanup legacy manual fuel logs.")),
+  });
+}
+
+/** Refresh trip-linked fuel liters/cost when seed constants change (idempotent update). */
+function refreshTripLinkedFuelFromSeed(sql: SqlClient) {
+  return Effect.gen(function* () {
+    for (const trip of TRIP_SEEDS) {
+      const liters = trip.fuelConsumedLiters;
+      const costInr = trip.fuelCostInr;
+
+      if (trip.status !== "completed" || !liters || !costInr) {
+        continue;
+      }
+
+      yield* Effect.tryPromise({
+        try: () =>
+          sql`
+            UPDATE fuel_logs f
+            SET
+              liters = ${liters},
+              cost_inr = ${costInr},
+              updated_at = NOW()
+            FROM trips t
+            WHERE f.trip_id = t.id
+              AND t.deleted_at IS NULL
+              AND t.status = 'completed'
+              AND f.notes = ${`Seed fuel for ${trip.seedKey}`}
+          `,
+        catch: (error) =>
+          new Error(getErrorMessage(error, `Failed to refresh fuel for ${trip.seedKey}.`)),
+      });
+    }
+  });
+}
+
+/** Remove fuel/expense/revenue linked to soft-deleted trips so KPIs stay consistent. */
+function cleanupLogsForDeletedTrips(sql: SqlClient) {
+  return Effect.gen(function* () {
+    yield* Effect.tryPromise({
+      try: () =>
+        sql`
+          DELETE FROM fuel_logs f
+          USING trips t
+          WHERE f.trip_id = t.id
+            AND t.deleted_at IS NOT NULL
+        `,
+      catch: (error) =>
+        new Error(getErrorMessage(error, "Failed to cleanup fuel for deleted trips.")),
+    });
+    yield* Effect.tryPromise({
+      try: () =>
+        sql`
+          DELETE FROM expenses e
+          USING trips t
+          WHERE e.trip_id = t.id
+            AND t.deleted_at IS NOT NULL
+        `,
+      catch: (error) =>
+        new Error(getErrorMessage(error, "Failed to cleanup expenses for deleted trips.")),
+    });
+    yield* Effect.tryPromise({
+      try: () =>
+        sql`
+          DELETE FROM revenue_logs r
+          USING trips t
+          WHERE r.trip_id = t.id
+            AND t.deleted_at IS NOT NULL
+        `,
+      catch: (error) =>
+        new Error(getErrorMessage(error, "Failed to cleanup revenue for deleted trips.")),
+    });
+  });
+}
+
+/** Sample trips + trip-linked fuel/expense/revenue (ADR-056) for analytics. */
 function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
   return Effect.gen(function* () {
+    yield* cleanupBadAnalyticsTrips(sql);
+    yield* cleanupLogsForDeletedTrips(sql);
+    yield* cleanupLegacyManualFuel(sql);
+    yield* refreshTripLinkedFuelFromSeed(sql);
     let revenueCount = 0;
 
     for (const trip of TRIP_SEEDS) {
@@ -613,59 +714,60 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
           new Error(getErrorMessage(error, `Failed to check existing trip ${trip.seedKey}.`)),
       });
 
-      if (existing[0]) {
-        continue;
-      }
-
-      const tripId = crypto.randomUUID();
+      let tripId = existing[0]?.id;
       const isCompleted = trip.status === "completed";
 
-      yield* Effect.tryPromise({
-        try: () =>
-          sql`
-            INSERT INTO trips (
-              id,
-              status,
-              source_location_id,
-              destination_location_id,
-              vehicle_id,
-              driver_id,
-              cargo_weight_kg,
-              planned_distance_km,
-              start_odometer_km,
-              end_odometer_km,
-              actual_distance_km,
-              fuel_consumed_liters,
-              fuel_cost_inr,
-              dispatched_at,
-              completed_at,
-              created_by_user_id,
-              created_at,
-              updated_at
-            )
-            VALUES (
-              ${tripId}::uuid,
-              ${trip.status},
-              ${sourceLocationId}::uuid,
-              ${destinationLocationId}::uuid,
-              ${vehicle.id}::uuid,
-              ${driver.id}::uuid,
-              ${trip.cargoWeightKg},
-              ${trip.plannedDistanceKm},
-              ${trip.startOdometerKm ?? null},
-              ${trip.endOdometerKm ?? null},
-              ${trip.actualDistanceKm ?? null},
-              ${trip.fuelConsumedLiters ?? null},
-              ${trip.fuelCostInr ?? null},
-              ${trip.dispatchedOn ? `${trip.dispatchedOn}T08:00:00Z` : null},
-              ${trip.completedOn ? `${trip.completedOn}T17:00:00Z` : null},
-              ${createdByUserId},
-              NOW(),
-              NOW()
-            )
-          `,
-        catch: (error) => new Error(getErrorMessage(error, `Failed to seed trip ${trip.seedKey}.`)),
-      });
+      if (!tripId) {
+        tripId = crypto.randomUUID();
+
+        yield* Effect.tryPromise({
+          try: () =>
+            sql`
+              INSERT INTO trips (
+                id,
+                status,
+                source_location_id,
+                destination_location_id,
+                vehicle_id,
+                driver_id,
+                cargo_weight_kg,
+                planned_distance_km,
+                start_odometer_km,
+                end_odometer_km,
+                actual_distance_km,
+                fuel_consumed_liters,
+                fuel_cost_inr,
+                dispatched_at,
+                completed_at,
+                created_by_user_id,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ${tripId}::uuid,
+                ${trip.status},
+                ${sourceLocationId}::uuid,
+                ${destinationLocationId}::uuid,
+                ${vehicle.id}::uuid,
+                ${driver.id}::uuid,
+                ${trip.cargoWeightKg},
+                ${trip.plannedDistanceKm},
+                ${trip.startOdometerKm ?? null},
+                ${trip.endOdometerKm ?? null},
+                ${trip.actualDistanceKm ?? null},
+                ${trip.fuelConsumedLiters ?? null},
+                ${trip.fuelCostInr ?? null},
+                ${trip.dispatchedOn ? `${trip.dispatchedOn}T08:00:00Z` : null},
+                ${trip.completedOn ? `${trip.completedOn}T17:00:00Z` : null},
+                ${createdByUserId},
+                NOW(),
+                NOW()
+              )
+            `,
+          catch: (error) =>
+            new Error(getErrorMessage(error, `Failed to seed trip ${trip.seedKey}.`)),
+        });
+      }
 
       if (!isCompleted) {
         continue;
@@ -695,7 +797,7 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
               created_at,
               updated_at
             )
-            VALUES (
+            SELECT
               ${vehicle.id}::uuid,
               ${tripId}::uuid,
               ${trip.fuelConsumedLiters ?? "1.000"},
@@ -705,6 +807,8 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
               ${createdByUserId},
               NOW(),
               NOW()
+            WHERE NOT EXISTS (
+              SELECT 1 FROM fuel_logs f WHERE f.trip_id = ${tripId}::uuid
             )
           `,
         catch: (error) =>
@@ -725,7 +829,7 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
               created_at,
               updated_at
             )
-            VALUES (
+            SELECT
               ${vehicle.id}::uuid,
               ${expenseCategoryId}::uuid,
               ${tripId}::uuid,
@@ -735,13 +839,18 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
               ${createdByUserId},
               NOW(),
               NOW()
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM expenses e
+              WHERE e.trip_id = ${tripId}::uuid
+                AND e.description = ${`Seed expense for ${trip.seedKey}`}
             )
           `,
         catch: (error) =>
           new Error(getErrorMessage(error, `Failed to seed expense for ${trip.seedKey}.`)),
       });
 
-      yield* Effect.tryPromise({
+      const revenueInsert = yield* Effect.tryPromise({
         try: () =>
           sql`
             INSERT INTO revenue_logs (
@@ -756,7 +865,7 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
               created_at,
               updated_at
             )
-            VALUES (
+            SELECT
               ${tripId}::uuid,
               ${vehicle.id}::uuid,
               ${plannedKm.toFixed(2)},
@@ -767,13 +876,18 @@ function seedSampleTrips(sql: SqlClient, createdByUserId: string) {
               ${createdByUserId},
               NOW(),
               NOW()
+            WHERE NOT EXISTS (
+              SELECT 1 FROM revenue_logs r WHERE r.trip_id = ${tripId}::uuid
             )
+            RETURNING id
           `,
         catch: (error) =>
           new Error(getErrorMessage(error, `Failed to seed revenue for ${trip.seedKey}.`)),
       });
 
-      revenueCount += 1;
+      if (Array.isArray(revenueInsert) && revenueInsert.length > 0) {
+        revenueCount += 1;
+      }
     }
 
     const completedCount = TRIP_SEEDS.filter((t) => t.status === "completed").length;
@@ -885,19 +999,19 @@ const program = Effect.gen(function* () {
       yield* seedFleetVehicles(sql, result.id);
       yield* seedFleetDrivers(sql, result.id);
 
+      yield* Console.log("\n🗺️  Sample trips + revenue (ADR-056):");
+      yield* seedSampleTrips(sql, result.id);
+
       yield* Console.log("\n🔧  Maintenance sample data:");
       yield* seedMaintenanceLogs(sql, result.id);
 
-      yield* Console.log("\n⛽  Fuel & expense sample data:");
+      yield* Console.log("\n⛽  Manual fuel & expense sample data:");
       yield* seedFuelAndExpenses(sql, finance.id);
-
-      yield* Console.log("\n🗺️  Sample trips + revenue (ADR-056):");
-      yield* seedSampleTrips(sql, result.id);
     }),
   );
 
   yield* Console.log(
-    `\n✅  Seed complete — masters, users (FM/FA/Safety/Dispatcher), ${LOCATION_SEEDS.length} locations, fleet (${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers), maintenance, fuel & expenses, ${TRIP_SEEDS.length} trips.\n`,
+    `\n✅  Seed complete — masters, users (FM/FA/Safety/Dispatcher), ${LOCATION_SEEDS.length} locations, fleet (${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers), maintenance, fuel & expenses, ${TRIP_SEEDS.length} trips + revenue.\n`,
   );
 });
 

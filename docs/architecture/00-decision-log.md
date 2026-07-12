@@ -60,6 +60,8 @@ Append-only style. Do not rewrite history; supersede with a new ADR row.
 | ADR-054 | 2026-07-12 | UI stack                 | **shadcn only**; **blocks first** (`login-02`, `dashboard-01`); else components; **MCP first**             | No custom UI libs; see `08-ui-shadcn.md`                                  |
 | ADR-055 | 2026-07-12 | Trip locations           | **`locations` table** replaces free-text source/destination; FK on trips; source ≠ destination             | Dispatcher dropdowns; fleet manager can add locations                     |
 | ADR-056 | 2026-07-12 | Trip revenue model       | **`revenue_logs` on trip complete**; formula `planned_km × capacity_kg × rate`; real monthly revenue + ROI | Acting as transport company; reports need earned revenue per trip/vehicle |
+| ADR-057 | 2026-07-12 | Reports & Analytics UI   | Route `/analytics` + API `/api/analytics/*`; FM + FA; efficiency/utilization/op cost/ROI/CSV               | PDF §3.8 + mockup screen 7; consumes ADR-056 `revenue_logs`               |
+| ADR-058 | 2026-07-12 | Documents module         | `/documents` UI + `/api/documents/*`; local disk under `UPLOAD_STORAGE_DIR`; soft delete; FM only          | ADR-025/040; vehicle/maintenance attachments                              |
 
 ## Scaffold note (migration intent)
 

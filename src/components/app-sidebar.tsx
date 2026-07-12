@@ -64,7 +64,7 @@ const NAV_MAIN_CATALOG: Array<{
   {
     id: "analytics",
     title: "Analytics",
-    url: "#",
+    url: "/analytics",
     icon: <BarChart3Icon />,
   },
 ];
@@ -90,7 +90,7 @@ const DOCUMENTS_CATALOG: Array<{
   {
     id: "documents",
     name: "Documents",
-    url: "#",
+    url: "/documents",
     icon: <TruckIcon />,
   },
 ];

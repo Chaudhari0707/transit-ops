@@ -1,5 +1,5 @@
 /**
- * Sample trips aligned with `src/app/dashboard/_lib/demo-trips.ts` and fleet seeds.
+ * Sample trips aligned with fleet seeds + analytics demos.
  * Completed trips also seed fuel + expense + revenue logs (ADR-056).
  */
 
@@ -30,8 +30,9 @@ export const TRIP_SEEDS: readonly SeedTripRow[] = [
     startOdometerKm: "128286.0",
     endOdometerKm: "128450.0",
     actualDistanceKm: "164.00",
-    fuelConsumedLiters: "48.500",
-    fuelCostInr: "4350.00",
+    // ~8.2 km/L for truck corridor demo (analytics efficiency)
+    fuelConsumedLiters: "20.000",
+    fuelCostInr: "1800.00",
     completedOn: "2026-05-18",
     dispatchedOn: "2026-05-17",
     expenseAmountInr: "420.00",
@@ -49,8 +50,9 @@ export const TRIP_SEEDS: readonly SeedTripRow[] = [
     startOdometerKm: "201002.0",
     endOdometerKm: "201200.0",
     actualDistanceKm: "198.00",
-    fuelConsumedLiters: "72.000",
-    fuelCostInr: "6480.00",
+    // ~8.25 km/L (analytics efficiency)
+    fuelConsumedLiters: "24.000",
+    fuelCostInr: "2160.00",
     completedOn: "2026-06-04",
     dispatchedOn: "2026-06-03",
     expenseAmountInr: "550.00",
@@ -90,8 +92,9 @@ export const TRIP_SEEDS: readonly SeedTripRow[] = [
     startOdometerKm: "156468.0",
     endOdometerKm: "156780.0",
     actualDistanceKm: "312.00",
-    fuelConsumedLiters: "95.200",
-    fuelCostInr: "8568.00",
+    // ~8.2 km/L (analytics efficiency)
+    fuelConsumedLiters: "38.000",
+    fuelCostInr: "3420.00",
     completedOn: "2026-07-02",
     dispatchedOn: "2026-07-01",
     expenseAmountInr: "890.00",

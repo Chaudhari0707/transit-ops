@@ -6,14 +6,17 @@ import {
   ensurePlaywrightAuthDirectory,
   getPlaywrightRuntimeConfig,
 } from "./support/env";
-
-const runtime = getPlaywrightRuntimeConfig();
+import { loadPlaywrightEnvFiles } from "./support/load-env";
 
 setup.beforeAll(async () => {
+  await loadPlaywrightEnvFiles();
   await ensurePlaywrightAuthDirectory();
 });
 
 setup("authenticate admin via API", async ({ page }) => {
+  await loadPlaywrightEnvFiles();
+  const runtime = getPlaywrightRuntimeConfig();
+
   await signInWithApi(page, {
     email: runtime.adminEmail,
     password: runtime.adminPassword,

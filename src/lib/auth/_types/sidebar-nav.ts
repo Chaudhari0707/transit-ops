@@ -1,6 +1,8 @@
 /** Page-level module access keys (aligned with module assert* rules). */
 export type PageModuleId =
+  | "analytics"
   | "dashboard"
+  | "documents"
   | "drivers"
   | "fuel_expenses"
   | "maintenance"

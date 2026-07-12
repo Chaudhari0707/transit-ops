@@ -44,9 +44,12 @@ export type FuelLogListItem = {
 
 export type OperationalSummary = {
   expensesTotalInr: string;
+  fuelEfficiencyKmPerL: string | null;
   fuelTotalInr: string;
+  fuelTotalLiters: string;
   maintenanceTotalInr: string;
   operationalCostInr: string;
+  totalDistanceKm: string;
 };
 
 /** Other-expenses row: toll/misc + closed maintenance linked (not stored as expense). */

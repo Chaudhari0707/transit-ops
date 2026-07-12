@@ -37,9 +37,12 @@ export type FuelLogUi = {
 
 export type OperationalSummaryUi = {
   expensesTotalInr: string;
+  fuelEfficiencyKmPerL: string | null;
   fuelTotalInr: string;
+  fuelTotalLiters: string;
   maintenanceTotalInr: string;
   operationalCostInr: string;
+  totalDistanceKm: string;
 };
 
 export type OtherExpenseRowUi = {

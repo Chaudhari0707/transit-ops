@@ -81,10 +81,13 @@ export const FuelExpensesModel = {
     items: t.Array(otherExpenseRow),
   }),
   summaryResponse: t.Object({
-    fuelTotalInr: t.String(),
-    maintenanceTotalInr: t.String(),
     expensesTotalInr: t.String(),
+    fuelEfficiencyKmPerL: t.Union([t.String(), t.Null()]),
+    fuelTotalInr: t.String(),
+    fuelTotalLiters: t.String(),
+    maintenanceTotalInr: t.String(),
     operationalCostInr: t.String(),
+    totalDistanceKm: t.String(),
   }),
   categoriesResponse: t.Object({
     items: t.Array(

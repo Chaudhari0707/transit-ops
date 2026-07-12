@@ -18,4 +18,4 @@ export type SeedTripRow = {
   vehicleNameModel: string;
 };
 
-export type SeedTripStatus = "draft" | "dispatched" | "completed";
+export type SeedTripStatus = "completed" | "dispatched" | "draft";

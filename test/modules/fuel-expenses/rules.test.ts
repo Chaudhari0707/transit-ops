@@ -5,6 +5,7 @@ import {
   assertAllowedExpenseCategoryCode,
   assertFuelExpenseReadRole,
   assertFuelExpenseWriteRole,
+  computeFuelEfficiencyKmPerL,
   computeOperationalCostInr,
   normalizePositiveAmount,
   normalizePositiveLiters,
@@ -75,5 +76,15 @@ describe("normalize failure modes", () => {
     expect(() => normalizePositiveAmount(0, "amountInr")).toThrow(
       "amountInr must be greater than 0",
     );
+  });
+});
+
+describe("computeFuelEfficiencyKmPerL", () => {
+  test("computes km per liter", () => {
+    expect(computeFuelEfficiencyKmPerL(420, 50)).toBe(8.4);
+  });
+
+  test("returns null without liters", () => {
+    expect(computeFuelEfficiencyKmPerL(100, 0)).toBeNull();
   });
 });

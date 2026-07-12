@@ -41,6 +41,7 @@ export const config = {
      * - Skip API routes (auth + domain APIs protect themselves)
      * - Skip Next internals + common static extensions
      * Docs: authentication.md → "Optimistic checks with Proxy"
+     * Protects all app pages including /analytics, /documents, /trips, etc.
      */
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],

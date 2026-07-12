@@ -12,8 +12,9 @@
 4. Open items only in `07-open-questions.md`
 5. Prefer Excalidraw mockup for UX flow questions
 
-**Last updated:** 2026-07-12 (Revenue model ADR-056)  
-**Status:** Architecture locked for v1 + trip revenue  
+**Last updated:** 2026-07-12 (Revenue ADR-056 + Analytics/Documents modules)  
+**Status:** Architecture locked for v1 + trip revenue + reports
+
 **UI mockup:** Excalidraw (TransitOps platform board — project share link)  
 **Linear:** project docs — Architecture · Parallel Phases · UI Law (no absolute paths in repo)
 

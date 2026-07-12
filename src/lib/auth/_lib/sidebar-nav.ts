@@ -53,6 +53,8 @@ const PAGE_ACCESS_ROLES: Record<PageModuleId, readonly UserRole[]> = {
   maintenance: ["fleet_manager", "financial_analyst"],
   // Existing fuel rules allow fleet_manager for demo/bootstrap + FA.
   fuel_expenses: ["financial_analyst", "fleet_manager"],
+  analytics: ["fleet_manager", "financial_analyst"],
+  documents: ["fleet_manager"],
 };
 
 export function canAccessPageModule(role: UserRole, moduleId: PageModuleId): boolean {
