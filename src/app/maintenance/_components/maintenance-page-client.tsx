@@ -122,38 +122,34 @@ export function MaintenancePageClient({ canWrite }: MaintenancePageClientProps) 
 
   return (
     <div className="flex flex-col gap-4 px-4 lg:gap-6 lg:px-6">
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading maintenance…</p>
+      {canWrite ? (
+        <MaintenanceLogForm
+          disabled={!canWrite}
+          form={form}
+          onChange={setForm}
+          onSubmit={() => void handleOpen()}
+          submitting={submitting}
+          types={types}
+          vehicles={vehicles}
+        />
       ) : (
-        <>
-          {canWrite ? (
-            <MaintenanceLogForm
-              disabled={!canWrite}
-              form={form}
-              onChange={setForm}
-              onSubmit={() => void handleOpen()}
-              submitting={submitting}
-              types={types}
-              vehicles={vehicles}
-            />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>View only</CardTitle>
-                <CardDescription>
-                  Your role can view maintenance costs but cannot open or close jobs.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-          <MaintenanceLogsTable
-            canWrite={canWrite}
-            closingId={closingId}
-            logs={logs}
-            onClose={(id) => void handleClose(id)}
-          />
-        </>
+        <Card>
+          <CardHeader>
+            <CardTitle>View only</CardTitle>
+            <CardDescription>
+              Your role can view maintenance costs but cannot open or close jobs.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       )}
+
+      <MaintenanceLogsTable
+        canWrite={canWrite}
+        closingId={closingId}
+        loading={loading}
+        logs={logs}
+        onClose={(id) => void handleClose(id)}
+      />
     </div>
   );
 }

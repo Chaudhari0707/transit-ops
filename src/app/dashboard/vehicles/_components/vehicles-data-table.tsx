@@ -23,11 +23,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableLoadingRows } from "@/lib/boneyard/table-row-shimmer";
 
 type VehiclesDataTableProps = {
   vehicles: VehicleListItem[];
   vehicleTypes: VehicleTypeOption[];
   canWrite: boolean;
+  loading?: boolean;
   onEdit: (vehicle: VehicleListItem) => void;
   onRetire: (vehicle: VehicleListItem) => void;
   onDelete: (vehicle: VehicleListItem) => void;
@@ -37,11 +39,14 @@ export function VehiclesDataTable({
   vehicles,
   vehicleTypes,
   canWrite,
+  loading = false,
   onEdit,
   onRetire,
   onDelete,
 }: VehiclesDataTableProps) {
-  if (vehicles.length === 0) {
+  const columnCount = canWrite ? 8 : 7;
+
+  if (!loading && vehicles.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
         No vehicles match the current filters.
@@ -50,7 +55,7 @@ export function VehiclesDataTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -65,63 +70,67 @@ export function VehiclesDataTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {vehicles.map((vehicle) => (
-            <TableRow key={vehicle.id}>
-              <TableCell className="font-medium">{vehicle.registrationNumber}</TableCell>
-              <TableCell>{vehicle.nameModel}</TableCell>
-              <TableCell>{typeLabel(vehicleTypes, vehicle.vehicleTypeId)}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {vehicle.maxLoadCapacityKg.toLocaleString("en-IN")} kg
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatKm(vehicle.odometerKm)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatInr(vehicle.acquisitionCostInr)}
-              </TableCell>
-              <TableCell>
-                <Badge className={VEHICLE_STATUS_CLASS[vehicle.status]}>
-                  {VEHICLE_STATUS_LABEL[vehicle.status]}
-                </Badge>
-              </TableCell>
-              {canWrite ? (
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={`Edit ${vehicle.registrationNumber}`}
-                      onClick={() => onEdit(vehicle)}
-                    >
-                      <PencilIcon />
-                    </Button>
-                    {vehicle.status !== "retired" && vehicle.status !== "on_trip" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onRetire(vehicle)}
-                      >
-                        Retire
-                      </Button>
-                    ) : null}
-                    {vehicle.status !== "on_trip" ? (
+          {loading ? (
+            <TableLoadingRows columnCount={columnCount} rowCount={6} />
+          ) : (
+            vehicles.map((vehicle) => (
+              <TableRow key={vehicle.id}>
+                <TableCell className="font-medium">{vehicle.registrationNumber}</TableCell>
+                <TableCell>{vehicle.nameModel}</TableCell>
+                <TableCell>{typeLabel(vehicleTypes, vehicle.vehicleTypeId)}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {vehicle.maxLoadCapacityKg.toLocaleString("en-IN")} kg
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatKm(vehicle.odometerKm)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatInr(vehicle.acquisitionCostInr)}
+                </TableCell>
+                <TableCell>
+                  <Badge className={VEHICLE_STATUS_CLASS[vehicle.status]}>
+                    {VEHICLE_STATUS_LABEL[vehicle.status]}
+                  </Badge>
+                </TableCell>
+                {canWrite ? (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
                       <Button
                         type="button"
                         size="icon-sm"
                         variant="ghost"
-                        aria-label={`Delete ${vehicle.registrationNumber}`}
-                        onClick={() => onDelete(vehicle)}
+                        aria-label={`Edit ${vehicle.registrationNumber}`}
+                        onClick={() => onEdit(vehicle)}
                       >
-                        <Trash2Icon />
+                        <PencilIcon />
                       </Button>
-                    ) : null}
-                  </div>
-                </TableCell>
-              ) : null}
-            </TableRow>
-          ))}
+                      {vehicle.status !== "retired" && vehicle.status !== "on_trip" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRetire(vehicle)}
+                        >
+                          Retire
+                        </Button>
+                      ) : null}
+                      {vehicle.status !== "on_trip" ? (
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Delete ${vehicle.registrationNumber}`}
+                          onClick={() => onDelete(vehicle)}
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>

@@ -6,7 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon, Loader2Icon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 
-import { getSignInErrorMessage, signInDefaultValues } from "@/app/sign-in/_lib/sign-in-helpers";
+import {
+  getDemoCredentialsForRole,
+  getSignInErrorMessage,
+  signInDefaultValues,
+} from "@/app/sign-in/_lib/sign-in-helpers";
 import { signInSchema } from "@/app/sign-in/_lib/sign-in-schema";
 import type { SignInFormValues } from "@/app/sign-in/_types/sign-in";
 import { Button } from "@/components/ui/button";
@@ -19,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { USER_ROLE_LABELS, USER_ROLES } from "@/lib/auth/_types/user-role";
+import { isUserRole, USER_ROLE_LABELS, USER_ROLES } from "@/lib/auth/_types/user-role";
 import { authClient } from "@/lib/auth/auth-client";
 import { LOGIN_ROLE_HEADER } from "@/lib/auth/login-role-header";
 import { cn } from "@/lib/utils";
@@ -34,6 +38,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
     control,
     handleSubmit,
     register,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<SignInFormValues>({
     defaultValues: signInDefaultValues,
@@ -91,7 +96,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Sign in to TransitOps</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Enter your email, password, and assigned role to access the operations dashboard.
+            Pick a role to autofill seeded demo credentials, or enter your own email and password.
           </p>
         </div>
 
@@ -142,9 +147,19 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
               <Select
                 value={field.value}
                 onValueChange={(value) => {
-                  if (value != null) {
-                    field.onChange(value);
+                  if (value == null || !isUserRole(value)) {
+                    return;
                   }
+                  field.onChange(value);
+                  const credentials = getDemoCredentialsForRole(value);
+                  setValue("email", credentials.email, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue("password", credentials.password, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
                 }}
               >
                 <SelectTrigger id="role" aria-invalid={!!errors.role}>

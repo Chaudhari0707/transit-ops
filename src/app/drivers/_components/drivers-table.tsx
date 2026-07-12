@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableLoadingRows } from "@/lib/boneyard/table-row-shimmer";
 
 const statusVariant: Record<
   DriverUi["status"],
@@ -34,17 +35,26 @@ type DriversTableProps = {
   canWrite: boolean;
   deletingId: string | null;
   drivers: DriverUi[];
+  loading?: boolean;
   onDelete: (id: string) => void;
   onEdit: (driver: DriverUi) => void;
 };
 
+/**
+ * Single table — same DOM when loading and loaded (Sardhar DataTable pattern).
+ * Card title, compliance copy, and column headers always render as real UI.
+ * Only tbody cell contents become shimmer bars while `loading`.
+ */
 export function DriversTable({
   canWrite,
   deletingId,
   drivers,
+  loading = false,
   onDelete,
   onEdit,
 }: DriversTableProps) {
+  const columnCount = canWrite ? 9 : 8;
+
   return (
     <Card>
       <CardHeader>
@@ -70,9 +80,11 @@ export function DriversTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {drivers.length === 0 ? (
+            {loading ? (
+              <TableLoadingRows columnCount={columnCount} rowCount={6} />
+            ) : drivers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canWrite ? 9 : 8} className="text-center text-muted-foreground">
+                <TableCell colSpan={columnCount} className="text-center text-muted-foreground">
                   No drivers found.
                 </TableCell>
               </TableRow>

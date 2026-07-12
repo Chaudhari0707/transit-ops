@@ -25,7 +25,7 @@ export default async function AnalyticsPage() {
       />
       <SidebarInset>
         <SiteHeader title="Reports & Analytics" roleLabel="Fleet / Finance" />
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {allowed ? (
             <AnalyticsPageClient />
           ) : (

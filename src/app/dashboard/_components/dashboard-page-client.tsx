@@ -9,6 +9,7 @@ import { RecentTripsTable } from "@/app/dashboard/_components/recent-trips-table
 import { VehicleStatusChart } from "@/app/dashboard/_components/vehicle-status-chart";
 import { fetchRecentTrips } from "@/app/dashboard/_lib/dashboard-api";
 import type {
+  DashboardKpisView,
   DashboardPageClientProps,
   RecentTripView,
   TripStatusFilter,
@@ -23,6 +24,14 @@ export function DashboardPageClient({
   const [status, setStatus] = useState<TripStatusFilter>("all");
   const [trips, setTrips] = useState<RecentTripView[]>(initialTrips);
   const [tripsLoading, setTripsLoading] = useState(false);
+  // SSR already filled KPIs; brief client paint can still show value shimmer until hydrated.
+  const [kpis, setKpis] = useState<DashboardKpisView>(initialKpis);
+  const [kpisLoading, setKpisLoading] = useState(true);
+
+  useEffect(() => {
+    setKpis(initialKpis);
+    setKpisLoading(false);
+  }, [initialKpis]);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,6 +39,7 @@ export function DashboardPageClient({
     // SSR already loaded unfiltered trips — only re-fetch when filters change.
     if (vehicleTypeId === "all" && status === "all") {
       setTrips(initialTrips);
+      setTripsLoading(false);
       return;
     }
 
@@ -65,7 +75,7 @@ export function DashboardPageClient({
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <KpiCards kpis={initialKpis} />
+        <KpiCards kpis={kpis} loading={kpisLoading} />
 
         <div className="flex flex-col gap-4 px-4 lg:px-6">
           <DashboardFilters
@@ -81,7 +91,7 @@ export function DashboardPageClient({
               <RecentTripsTable trips={trips} loading={tripsLoading} />
             </div>
             <div className="lg:col-span-2">
-              <VehicleStatusChart vehicleStatus={initialKpis.vehicleStatus} />
+              <VehicleStatusChart vehicleStatus={kpis.vehicleStatus} />
             </div>
           </div>
         </div>

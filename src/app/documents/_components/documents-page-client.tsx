@@ -207,16 +207,13 @@ export function DocumentsPageClient({ canWrite }: DocumentsPageClientProps) {
         onSubmit={() => void handleUpload()}
       />
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading documents…</p>
-      ) : (
-        <DocumentsTable
-          canWrite={canWrite}
-          deletingId={deletingId}
-          items={items}
-          onDelete={(id) => void handleDelete(id)}
-        />
-      )}
+      <DocumentsTable
+        canWrite={canWrite}
+        deletingId={deletingId}
+        items={items}
+        loading={loading}
+        onDelete={(id) => void handleDelete(id)}
+      />
     </div>
   );
 }

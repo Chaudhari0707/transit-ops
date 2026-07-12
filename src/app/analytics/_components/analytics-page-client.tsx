@@ -15,6 +15,8 @@ import {
 } from "@/app/analytics/_lib/analytics-api";
 import type { AnalyticsReportUi } from "@/app/analytics/_types/analytics-ui";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BONEYARD_RUNTIME } from "@/lib/boneyard/runtime-style";
 
 function isUnauthorizedMessage(message: string): boolean {
   const lower = message.toLowerCase();
@@ -24,6 +26,29 @@ function isUnauthorizedMessage(message: string): boolean {
 function isForbiddenMessage(message: string): boolean {
   const lower = message.toLowerCase();
   return lower.includes("forbidden") || lower.includes("request failed (403)");
+}
+
+const shimmerBar = {
+  backgroundColor: BONEYARD_RUNTIME.color,
+  backgroundImage: `linear-gradient(${BONEYARD_RUNTIME.shimmerAngle}deg, ${BONEYARD_RUNTIME.color} 30%, ${BONEYARD_RUNTIME.shimmerColor} 50%, ${BONEYARD_RUNTIME.color} 70%)`,
+  backgroundSize: "200% 100%",
+  animation: `boneyard-cell-shimmer ${BONEYARD_RUNTIME.speed} linear infinite`,
+} as const;
+
+function ChartPanelLoading({ title }: { title: string }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>
+          <span className="sr-only">Loading chart</span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-48 w-full rounded-xl" style={shimmerBar} />
+      </CardContent>
+    </Card>
+  );
 }
 
 export function AnalyticsPageClient() {
@@ -83,15 +108,7 @@ export function AnalyticsPageClient() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="px-4 lg:px-6">
-        <p className="text-sm text-muted-foreground">Loading reports & analytics…</p>
-      </div>
-    );
-  }
-
-  if (denied) {
+  if (denied && !loading) {
     return (
       <div className="px-4 lg:px-6">
         <div className="rounded-lg border p-6 text-sm text-muted-foreground">
@@ -101,7 +118,7 @@ export function AnalyticsPageClient() {
     );
   }
 
-  if (!report) {
+  if (!loading && !report) {
     return (
       <div className="px-4 lg:px-6">
         <div className="rounded-lg border p-6 text-sm text-muted-foreground">
@@ -113,17 +130,21 @@ export function AnalyticsPageClient() {
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
+      <style>{`@keyframes boneyard-cell-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <AnalyticsKpiCards summary={report.summary} />
+        {/* Labels stay; only metric values shimmer while loading */}
+        <AnalyticsKpiCards summary={report?.summary ?? null} loading={loading} />
 
         <div className="flex flex-col gap-4 px-4 lg:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">{report.summary.roiFormula}</p>
+            <p className="text-sm text-muted-foreground">
+              {loading ? " " : (report?.summary.roiFormula ?? "")}
+            </p>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={exporting}
+              disabled={loading || exporting}
               onClick={() => void handleExport()}
             >
               <DownloadIcon className="size-4" />
@@ -133,10 +154,18 @@ export function AnalyticsPageClient() {
 
           <div className="grid items-start gap-4 lg:grid-cols-5">
             <div className="lg:col-span-3">
-              <MonthlyRevenueChart points={report.monthlyRevenue} />
+              {loading || !report ? (
+                <ChartPanelLoading title="Monthly revenue" />
+              ) : (
+                <MonthlyRevenueChart points={report.monthlyRevenue} />
+              )}
             </div>
             <div className="lg:col-span-2">
-              <CostliestVehicles items={report.costliestVehicles} />
+              {loading || !report ? (
+                <ChartPanelLoading title="Costliest vehicles" />
+              ) : (
+                <CostliestVehicles items={report.costliestVehicles} />
+              )}
             </div>
           </div>
         </div>

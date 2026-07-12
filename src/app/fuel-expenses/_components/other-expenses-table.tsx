@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableLoadingRows } from "@/lib/boneyard/table-row-shimmer";
 
 function formatInr(value: string): string {
   const amount = Number(value);
@@ -33,10 +34,11 @@ const statusLabel: Record<OtherExpenseRowUi["vehicleStatus"], string> = {
 };
 
 type OtherExpensesTableProps = {
+  loading?: boolean;
   rows: OtherExpenseRowUi[];
 };
 
-export function OtherExpensesTable({ rows }: OtherExpensesTableProps) {
+export function OtherExpensesTable({ rows, loading = false }: OtherExpensesTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -60,7 +62,9 @@ export function OtherExpensesTable({ rows }: OtherExpensesTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 ? (
+            {loading ? (
+              <TableLoadingRows columnCount={6} rowCount={5} />
+            ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No other expenses or closed maintenance costs yet.

@@ -33,6 +33,7 @@ import {
   SESSION_EXPIRED_TOAST,
   toUserFacingApiError,
 } from "@/lib/api/http-errors";
+import { ValueShimmerBar } from "@/lib/boneyard/table-row-shimmer";
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -76,6 +77,84 @@ function handleClientApiError(message: string): void {
     return;
   }
   toast.error(toUserFacingApiError(message));
+}
+
+function OperationalSummaryCard({
+  summary,
+  loading = false,
+}: {
+  loading?: boolean;
+  summary: OperationalSummaryUi | null;
+}) {
+  return (
+    <Card className="border-amber-500/40 bg-amber-500/5">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">
+          Total operational cost (auto) = fuel + maintenance
+        </CardTitle>
+        <CardDescription>
+          Toll/misc stay under other expenses and are not included in operational cost. Completed
+          maintenance appears as MAINT. (LINKED) above.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-end justify-between gap-4">
+        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
+          <div>
+            <div className="text-muted-foreground">Fuel</div>
+            <div className="font-semibold tabular-nums">
+              {loading || !summary ? (
+                <ValueShimmerBar className="h-5 w-16" />
+              ) : (
+                formatInr(summary.fuelTotalInr)
+              )}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Maintenance</div>
+            <div className="font-semibold tabular-nums">
+              {loading || !summary ? (
+                <ValueShimmerBar className="h-5 w-16" />
+              ) : (
+                formatInr(summary.maintenanceTotalInr)
+              )}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Toll / misc</div>
+            <div className="font-semibold tabular-nums">
+              {loading || !summary ? (
+                <ValueShimmerBar className="h-5 w-16" />
+              ) : (
+                formatInr(summary.expensesTotalInr)
+              )}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Fuel efficiency</div>
+            <div className="font-semibold tabular-nums">
+              {loading || !summary ? (
+                <ValueShimmerBar className="h-5 w-14" />
+              ) : summary.fuelEfficiencyKmPerL ? (
+                `${summary.fuelEfficiencyKmPerL} km/L`
+              ) : (
+                "—"
+              )}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Op cost</div>
+            <div className="text-lg font-bold text-amber-700 tabular-nums dark:text-amber-400">
+              {loading || !summary ? (
+                <ValueShimmerBar className="h-7 w-20" />
+              ) : (
+                formatInr(summary.operationalCostInr)
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps) {
@@ -178,93 +257,43 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
 
   return (
     <div className="flex flex-col gap-4 px-4 lg:gap-6 lg:px-6">
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading fuel & expenses…</p>
-      ) : (
-        <>
-          <FuelExpenseForms
-            canWrite={canWrite}
-            categories={categories}
-            expenseForm={expenseForm}
-            expenseOpen={expenseOpen}
-            fuelForm={fuelForm}
-            fuelOpen={fuelOpen}
-            onExpenseChange={setExpenseForm}
-            onExpenseOpenChange={(open) => {
-              if (open) {
-                openExpenseModal();
-              } else {
-                setExpenseOpen(false);
-              }
-            }}
-            onExpenseSubmit={() => void handleExpenseSubmit()}
-            onFuelChange={setFuelForm}
-            onFuelOpenChange={(open) => {
-              if (open) {
-                openFuelModal();
-              } else {
-                setFuelOpen(false);
-              }
-            }}
-            onFuelSubmit={() => void handleFuelSubmit()}
-            submittingExpense={submittingExpense}
-            submittingFuel={submittingFuel}
-            trips={trips}
-            vehicles={vehicles}
-          />
+      {/* Forms always available — never skeletonized */}
+      <FuelExpenseForms
+        canWrite={canWrite}
+        categories={categories}
+        expenseForm={expenseForm}
+        expenseOpen={expenseOpen}
+        fuelForm={fuelForm}
+        fuelOpen={fuelOpen}
+        onExpenseChange={setExpenseForm}
+        onExpenseOpenChange={(open) => {
+          if (open) {
+            openExpenseModal();
+          } else {
+            setExpenseOpen(false);
+          }
+        }}
+        onExpenseSubmit={() => void handleExpenseSubmit()}
+        onFuelChange={setFuelForm}
+        onFuelOpenChange={(open) => {
+          if (open) {
+            openFuelModal();
+          } else {
+            setFuelOpen(false);
+          }
+        }}
+        onFuelSubmit={() => void handleFuelSubmit()}
+        submittingExpense={submittingExpense}
+        submittingFuel={submittingFuel}
+        trips={trips}
+        vehicles={vehicles}
+      />
 
-          <FuelLogsTable logs={logs} />
-          <OtherExpensesTable rows={otherRows} />
+      <FuelLogsTable logs={logs} loading={loading} />
+      <OtherExpensesTable rows={otherRows} loading={loading} />
 
-          {summary ? (
-            <Card className="border-amber-500/40 bg-amber-500/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">
-                  Total operational cost (auto) = fuel + maintenance
-                </CardTitle>
-                <CardDescription>
-                  Toll/misc stay under other expenses and are not included in operational cost.
-                  Completed maintenance appears as MAINT. (LINKED) above.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-end justify-between gap-4">
-                <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
-                  <div>
-                    <div className="text-muted-foreground">Fuel</div>
-                    <div className="font-semibold tabular-nums">
-                      {formatInr(summary.fuelTotalInr)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Maintenance</div>
-                    <div className="font-semibold tabular-nums">
-                      {formatInr(summary.maintenanceTotalInr)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Toll / misc</div>
-                    <div className="font-semibold tabular-nums">
-                      {formatInr(summary.expensesTotalInr)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Fuel efficiency</div>
-                    <div className="font-semibold tabular-nums">
-                      {summary.fuelEfficiencyKmPerL ? `${summary.fuelEfficiencyKmPerL} km/L` : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Op cost</div>
-                    <div className="text-lg font-bold text-amber-700 tabular-nums dark:text-amber-400">
-                      {formatInr(summary.operationalCostInr)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </>
-      )}
+      {/* Summary chrome always visible; only metric values shimmer */}
+      <OperationalSummaryCard summary={summary} loading={loading} />
     </div>
   );
 }

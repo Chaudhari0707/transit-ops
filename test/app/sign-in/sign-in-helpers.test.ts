@@ -1,15 +1,35 @@
 import { describe, expect, test } from "bun:test";
 
-import { getSignInErrorMessage, signInDefaultValues } from "@/app/sign-in/_lib/sign-in-helpers";
+import {
+  DEMO_SIGN_IN_BY_ROLE,
+  DEMO_SIGN_IN_PASSWORD,
+  getDemoCredentialsForRole,
+  getSignInErrorMessage,
+  signInDefaultValues,
+} from "@/app/sign-in/_lib/sign-in-helpers";
+import { USER_ROLES } from "@/lib/auth/_types/user-role";
 
 describe("signInDefaultValues", () => {
-  test("starts with fleet manager role selected", () => {
+  test("starts with fleet manager role and demo credentials", () => {
     expect(signInDefaultValues.role).toBe("fleet_manager");
+    expect(signInDefaultValues.email).toBe(DEMO_SIGN_IN_BY_ROLE.fleet_manager.email);
+    expect(signInDefaultValues.password).toBe(DEMO_SIGN_IN_PASSWORD);
+  });
+});
+
+describe("getDemoCredentialsForRole", () => {
+  test("maps every role to a seeded demo email and shared password", () => {
+    for (const role of USER_ROLES) {
+      const credentials = getDemoCredentialsForRole(role);
+      expect(credentials.email).toContain("@example.com");
+      expect(credentials.password).toBe(DEMO_SIGN_IN_PASSWORD);
+      expect(credentials).toEqual(DEMO_SIGN_IN_BY_ROLE[role]);
+    }
   });
 
-  test("starts with empty credentials", () => {
-    expect(signInDefaultValues.email).toBe("");
-    expect(signInDefaultValues.password).toBe("");
+  test("uses distinct emails per role", () => {
+    const emails = USER_ROLES.map((role) => getDemoCredentialsForRole(role).email);
+    expect(new Set(emails).size).toBe(USER_ROLES.length);
   });
 });
 

@@ -3,6 +3,7 @@ import "@/app/globals.css";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 
+import BoneRegistryInit from "@/bones/registry-client";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -40,6 +41,8 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
         <ThemeProvider>
+          {/* Official boneyard Next.js wiring: client registry bootstrap in root layout */}
+          <BoneRegistryInit />
           <SmoothScroll>
             <TooltipProvider>
               {children}

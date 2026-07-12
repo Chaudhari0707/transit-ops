@@ -20,11 +20,7 @@ export async function fillSignInForm(
     role: UserRole;
   },
 ) {
-  await page.locator("#email").fill(credentials.email);
-  await page.locator("#password").fill(credentials.password);
-  await expect(page.locator("#email")).toHaveValue(credentials.email);
-  await expect(page.locator("#password")).toHaveValue(credentials.password);
-
+  // Role first: changing role autofills demo credentials, so set email/password after.
   const roleLabel = USER_ROLE_LABELS[credentials.role];
   const roleTrigger = page.getByRole("combobox", { name: "Role" });
   const selectedRole = await roleTrigger.innerText();
@@ -37,6 +33,11 @@ export async function fillSignInForm(
     // Trigger may show enum value or human label depending on SelectValue rendering.
     await expect(roleTrigger).toContainText(new RegExp(`${credentials.role}|${roleLabel}`, "i"));
   }
+
+  await page.locator("#email").fill(credentials.email);
+  await page.locator("#password").fill(credentials.password);
+  await expect(page.locator("#email")).toHaveValue(credentials.email);
+  await expect(page.locator("#password")).toHaveValue(credentials.password);
 }
 
 export async function submitSignIn(page: Page, options?: { waitForAuthResponse?: boolean }) {

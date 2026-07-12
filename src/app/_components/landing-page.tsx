@@ -10,6 +10,7 @@ import {
   WrenchIcon,
 } from "lucide-react";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +99,8 @@ export function LandingPage() {
               Platform
             </a>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
             <Button variant="ghost" nativeButton={false} render={<Link href="/sign-in" />}>
               Sign in
             </Button>
