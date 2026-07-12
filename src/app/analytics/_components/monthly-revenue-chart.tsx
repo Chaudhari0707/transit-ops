@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
+import { formatInr } from "@/app/analytics/_lib/format-inr";
 import type { MonthlyRevenuePointUi } from "@/app/analytics/_types/analytics-ui";
 import type { ChartConfig } from "@/components/_types/chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +10,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 
 const chartConfig = {
   revenue: {
-    label: "Revenue",
     color: "var(--chart-1)",
+    label: "Revenue",
   },
 } satisfies ChartConfig;
 
@@ -28,30 +29,24 @@ export function MonthlyRevenueChart({ points }: MonthlyRevenueChartProps) {
     <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Monthly revenue</CardTitle>
-        <CardDescription>Static demo series (ADR-050) — not live bookings</CardDescription>
+        <CardDescription>From completed trips (`revenue_logs` · ADR-056)</CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
         <ChartContainer config={chartConfig} className="aspect-auto h-55 w-full">
-          <BarChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" />
-            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+          <BarChart data={data} margin={{ bottom: 0, left: 8, right: 8, top: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis axisLine={false} dataKey="label" tickLine={false} tickMargin={8} />
             <YAxis
-              tickLine={false}
               axisLine={false}
-              width={48}
               tickFormatter={(value: number) => `₹${Math.round(value / 1000)}k`}
+              tickLine={false}
+              width={48}
             />
             <ChartTooltip
               content={
                 <ChartTooltipContent
                   formatter={(value) =>
-                    typeof value === "number"
-                      ? new Intl.NumberFormat("en-IN", {
-                          style: "currency",
-                          currency: "INR",
-                          maximumFractionDigits: 0,
-                        }).format(value)
-                      : String(value)
+                    typeof value === "number" ? formatInr(value) : String(value)
                   }
                 />
               }

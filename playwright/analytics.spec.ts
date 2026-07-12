@@ -39,6 +39,15 @@ test.describe("Analytics API (authenticated fleet manager)", () => {
     expect(Number(body.summary.monthlyRevenueInr)).toBeGreaterThan(0);
     expect(body.monthlyRevenue.length).toBeGreaterThanOrEqual(6);
     expect(Array.isArray(body.costliestVehicles)).toBe(true);
+
+    const deep = body as {
+      costBreakdown?: { fuelTotalInr: string; operationalCostInr: string };
+      tripCounts?: { total: number; completed: number };
+      vehicleRoiTable?: Array<{ vehicleRegistration: string; roiPercent: string | null }>;
+    };
+    expect(deep.costBreakdown?.fuelTotalInr).toMatch(/^\d+\.\d{2}$/);
+    expect(typeof deep.tripCounts?.total).toBe("number");
+    expect(Array.isArray(deep.vehicleRoiTable)).toBe(true);
   });
 
   test("exports CSV with metric headers", async ({ request }) => {
@@ -63,8 +72,11 @@ test.describe("Analytics UI", () => {
     await expect(page.getByText(/Fleet utilization/i).first()).toBeVisible();
     await expect(page.getByText(/Operational cost/i).first()).toBeVisible();
     await expect(page.getByText(/Vehicle ROI/i).first()).toBeVisible();
-    await expect(page.getByText(/Monthly revenue/i)).toBeVisible();
-    await expect(page.getByText(/Top costliest vehicles/i)).toBeVisible();
+    await expect(page.getByText("Monthly revenue", { exact: true })).toBeVisible();
+    await expect(page.getByText("Top costliest vehicles", { exact: true })).toBeVisible();
+    await expect(page.getByText("Cost composition", { exact: true })).toBeVisible();
+    await expect(page.getByText("Deep vehicle ROI", { exact: true })).toBeVisible();
+    await expect(page.getByText("Fleet & trip pulse", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /Export CSV/i })).toBeVisible();
   });
 });

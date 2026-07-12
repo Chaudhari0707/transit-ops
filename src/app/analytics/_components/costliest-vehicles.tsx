@@ -1,18 +1,6 @@
+import { formatInr } from "@/app/analytics/_lib/format-inr";
 import type { CostliestVehicleUi } from "@/app/analytics/_types/analytics-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-function formatInr(value: string): string {
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) {
-    return value;
-  }
-
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 const BAR_COLORS = [
   "bg-rose-400",

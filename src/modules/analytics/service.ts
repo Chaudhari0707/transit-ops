@@ -4,7 +4,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 
 import { requireSessionUser } from "@/lib/auth/session";
 import { getDb } from "@/lib/db/client";
-import { fuelLogs, maintenanceLogs, revenueLogs, trips, vehicles } from "@/lib/db/schema";
+import { expenses, fuelLogs, maintenanceLogs, revenueLogs, trips, vehicles } from "@/lib/db/schema";
 import {
   assertAnalyticsReadRole,
   buildAnalyticsCsv,
@@ -23,6 +23,7 @@ import type {
   AnalyticsReport,
   AnalyticsSummary,
   CostliestVehicle,
+  VehicleRoiRow,
 } from "@/modules/analytics/_types/analytics";
 
 const ROI_FORMULA = "ROI = (Revenue − (Maintenance + Fuel)) / Acquisition Cost";
@@ -36,11 +37,11 @@ export abstract class AnalyticsService {
 
     const vehicleRows = await db
       .select({
-        id: vehicles.id,
-        registrationNumber: vehicles.registrationNumber,
-        nameModel: vehicles.nameModel,
-        status: vehicles.status,
         acquisitionCostInr: vehicles.acquisitionCostInr,
+        id: vehicles.id,
+        nameModel: vehicles.nameModel,
+        registrationNumber: vehicles.registrationNumber,
+        status: vehicles.status,
       })
       .from(vehicles)
       .where(isNull(vehicles.deletedAt));
@@ -58,6 +59,12 @@ export abstract class AnalyticsService {
       })
       .from(maintenanceLogs);
 
+    const [expenseAgg] = await db
+      .select({
+        total: sql<string>`coalesce(sum(${expenses.amountInr}), 0)`,
+      })
+      .from(expenses);
+
     const [distanceAgg] = await db
       .select({
         totalDistance: sql<string>`coalesce(sum(${trips.actualDistanceKm}), 0)`,
@@ -65,11 +72,20 @@ export abstract class AnalyticsService {
       .from(trips)
       .where(and(eq(trips.status, "completed"), isNull(trips.deletedAt)));
 
-    // Only count revenue for non-deleted trips (soft-deleted demo noise excluded).
+    const tripStatusRows = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+        status: trips.status,
+      })
+      .from(trips)
+      .where(isNull(trips.deletedAt))
+      .groupBy(trips.status);
+
     const revenueRows = await db
       .select({
         amountInr: revenueLogs.amountInr,
         earnedOn: revenueLogs.earnedOn,
+        vehicleId: revenueLogs.vehicleId,
       })
       .from(revenueLogs)
       .innerJoin(trips, eq(revenueLogs.tripId, trips.id))
@@ -85,16 +101,16 @@ export abstract class AnalyticsService {
 
     const fuelByVehicle = await db
       .select({
-        vehicleId: fuelLogs.vehicleId,
         totalCost: sql<string>`coalesce(sum(${fuelLogs.costInr}), 0)`,
+        vehicleId: fuelLogs.vehicleId,
       })
       .from(fuelLogs)
       .groupBy(fuelLogs.vehicleId);
 
     const maintByVehicle = await db
       .select({
-        vehicleId: maintenanceLogs.vehicleId,
         totalCost: sql<string>`coalesce(sum(${maintenanceLogs.costInr}), 0)`,
+        vehicleId: maintenanceLogs.vehicleId,
       })
       .from(maintenanceLogs)
       .groupBy(maintenanceLogs.vehicleId);
@@ -105,6 +121,12 @@ export abstract class AnalyticsService {
     const maintCostMap = new Map(
       maintByVehicle.map((row) => [row.vehicleId, Number(row.totalCost) || 0]),
     );
+    const revenueByVehicle = new Map<string, number>();
+
+    for (const row of revenueRows) {
+      const amount = Number(row.amountInr) || 0;
+      revenueByVehicle.set(row.vehicleId, (revenueByVehicle.get(row.vehicleId) ?? 0) + amount);
+    }
 
     let available = 0;
     let onTrip = 0;
@@ -113,6 +135,7 @@ export abstract class AnalyticsService {
     let totalAcquisition = 0;
 
     const costliestCandidates: CostliestVehicle[] = [];
+    const vehicleRoiTable: VehicleRoiRow[] = [];
 
     for (const vehicle of vehicleRows) {
       if (vehicle.status === "available") available += 1;
@@ -128,6 +151,28 @@ export abstract class AnalyticsService {
       const fuelCost = fuelCostMap.get(vehicle.id) ?? 0;
       const maintCost = maintCostMap.get(vehicle.id) ?? 0;
       const opCost = computeOperationalCostInr(fuelCost, maintCost);
+      const vehicleRevenue = revenueByVehicle.get(vehicle.id) ?? 0;
+      const vehicleRoi = computeVehicleRoiPercent({
+        acquisitionCostInr: acquisition,
+        fuelCostInr: fuelCost,
+        maintenanceCostInr: maintCost,
+        revenueInr: vehicleRevenue,
+      });
+
+      if (opCost > 0 || vehicleRevenue > 0) {
+        vehicleRoiTable.push({
+          acquisitionCostInr: moneyToFixed(acquisition),
+          fuelCostInr: moneyToFixed(fuelCost),
+          maintenanceCostInr: moneyToFixed(maintCost),
+          netInr: moneyToFixed(vehicleRevenue - opCost),
+          operationalCostInr: moneyToFixed(opCost),
+          revenueInr: moneyToFixed(vehicleRevenue),
+          roiPercent: vehicleRoi === null ? null : percentToFixed(vehicleRoi),
+          vehicleId: vehicle.id,
+          vehicleNameModel: vehicle.nameModel,
+          vehicleRegistration: vehicle.registrationNumber,
+        });
+      }
 
       if (opCost > 0) {
         costliestCandidates.push({
@@ -143,15 +188,22 @@ export abstract class AnalyticsService {
     }
 
     costliestCandidates.sort((a, b) => Number(b.operationalCostInr) - Number(a.operationalCostInr));
+    vehicleRoiTable.sort((a, b) => {
+      const aRoi = a.roiPercent === null ? Number.NEGATIVE_INFINITY : Number(a.roiPercent);
+      const bRoi = b.roiPercent === null ? Number.NEGATIVE_INFINITY : Number(b.roiPercent);
+      return bRoi - aRoi;
+    });
+
     const costliestVehicles = costliestCandidates.slice(0, 5);
 
     const fuelTotal = Number(fuelAgg?.totalCost ?? 0);
     const fuelLiters = Number(fuelAgg?.totalLiters ?? 0);
     const maintenanceTotal = Number(maintAgg?.totalCost ?? 0);
+    const expensesTotal = Number(expenseAgg?.total ?? 0);
     const totalDistance = Number(distanceAgg?.totalDistance ?? 0);
     const totalRevenue = Number(revenueAgg?.total ?? 0);
     const operationalCost = computeOperationalCostInr(fuelTotal, maintenanceTotal);
-    const utilization = computeFleetUtilizationPercent({ available, onTrip, inShop });
+    const utilization = computeFleetUtilizationPercent({ available, inShop, onTrip });
     const efficiency = computeFuelEfficiencyKmPerL(totalDistance, fuelLiters);
     const revenueForRoi = totalRevenue > 0 ? totalRevenue : STATIC_DEMO_MONTHLY_REVENUE_INR;
     const roi = computeVehicleRoiPercent({
@@ -166,7 +218,21 @@ export abstract class AnalyticsService {
         ? buildMonthlyRevenueSeriesFromLogs(revenueRows)
         : buildDemoMonthlyRevenueSeries(STATIC_DEMO_MONTHLY_REVENUE_INR);
 
+    let draft = 0;
+    let dispatched = 0;
+    let completed = 0;
+    let cancelled = 0;
+
+    for (const row of tripStatusRows) {
+      const count = Number(row.count) || 0;
+      if (row.status === "draft") draft = count;
+      else if (row.status === "dispatched") dispatched = count;
+      else if (row.status === "completed") completed = count;
+      else if (row.status === "cancelled") cancelled = count;
+    }
+
     const summary: AnalyticsSummary = {
+      expensesTotalInr: moneyToFixed(expensesTotal),
       fleetUtilizationPercent: percentToFixed(utilization),
       fuelEfficiencyKmPerL: efficiencyToFixed(efficiency),
       fuelTotalInr: moneyToFixed(fuelTotal),
@@ -175,6 +241,7 @@ export abstract class AnalyticsService {
       monthlyRevenueInr: moneyToFixed(
         totalRevenue > 0 ? totalRevenue : STATIC_DEMO_MONTHLY_REVENUE_INR,
       ),
+      netMarginInr: moneyToFixed(revenueForRoi - operationalCost),
       operationalCostInr: moneyToFixed(operationalCost),
       roiFormula: ROI_FORMULA,
       totalAcquisitionCostInr: moneyToFixed(totalAcquisition),
@@ -184,9 +251,23 @@ export abstract class AnalyticsService {
     };
 
     return {
+      costBreakdown: {
+        expensesTotalInr: moneyToFixed(expensesTotal),
+        fuelTotalInr: moneyToFixed(fuelTotal),
+        maintenanceTotalInr: moneyToFixed(maintenanceTotal),
+        operationalCostInr: moneyToFixed(operationalCost),
+      },
       costliestVehicles,
       monthlyRevenue,
       summary,
+      tripCounts: {
+        cancelled,
+        completed,
+        dispatched,
+        draft,
+        total: draft + dispatched + completed + cancelled,
+      },
+      vehicleRoiTable,
     };
   }
 
