@@ -12,8 +12,9 @@
 		<authRule required="true">All authentication lives in src/lib/auth/ using Better Auth. Follow `.agents/auth.md`. Consult Better Auth MCP (`search_docs`, `get_doc`) before any auth change.</authRule>
 		<schemaRule required="true">When schema files under src/lib/db change, update the related scripts in scripts/ during the same task. Better Auth tables must stay aligned with better-auth.ts adapter mapping.</schemaRule>
 		<documentationRule required="true">For core database or auth architecture changes, update docs/architecture/* and add concise scoped AGENTS.md guidance when future agents need a durable rule.</documentationRule>
+		<emailRule required="true">Transactional email uses Resend only via src/lib/email/resend.ts (HTTP fetch). Never add nodemailer or SMTP.</emailRule>
 	</backend>
 	</backendPolicy>
 ```
 
-See also: [`.agents/auth.md`](../../.agents/auth.md)
+See also: [`.agents/auth.md`](../../.agents/auth.md) · [email/AGENTS.md](./email/AGENTS.md)

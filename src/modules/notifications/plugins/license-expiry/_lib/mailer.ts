@@ -1,3 +1,4 @@
+import { resolveSenderAddress, sendTransactionalEmail } from "@/lib/email/_lib/resend-client";
 import {
   licenseExpirySubject,
   licenseExpiryTextBody,
@@ -9,6 +10,10 @@ import type {
   SendEmailResult,
 } from "@/modules/notifications/plugins/license-expiry/_types/notifications";
 
+/**
+ * Sends via log (dev) or shared Resend client (production).
+ * No nodemailer/SMTP — Resend only when mode is `resend`.
+ */
 export async function sendViaMailMode(
   mode: MailMode,
   input: SendEmailInput,
@@ -25,27 +30,16 @@ export async function sendViaMailMode(
     throw new Error("RESEND_API_KEY is required for resend mail mode");
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  return sendTransactionalEmail(
+    {
+      to: input.to,
       from: input.from,
-      to: [input.to],
       subject: input.subject,
       text: input.text,
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Resend API ${response.status}: ${body.slice(0, 400)}`);
-  }
-
-  const json = (await response.json()) as { id?: string };
-  return { providerMessageId: json.id ?? null };
+      html: input.html,
+    },
+    { apiKey: resendApiKey },
+  );
 }
 
 export function buildLicenseExpiryEmail(
@@ -53,10 +47,11 @@ export function buildLicenseExpiryEmail(
   fromEmail: string,
   payload: LicenseExpiryPayload,
 ): SendEmailInput {
+  const text = licenseExpiryTextBody(payload);
   return {
     to: recipientEmail,
-    from: fromEmail,
+    from: fromEmail || resolveSenderAddress(),
     subject: licenseExpirySubject(payload),
-    text: licenseExpiryTextBody(payload),
+    text,
   };
 }

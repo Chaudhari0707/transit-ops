@@ -1,3 +1,4 @@
+import { resolveSenderAddress } from "@/lib/email/_lib/resend-client";
 import type { NotificationJobConfig } from "@/modules/notifications/plugins/license-expiry/_types/notifications";
 import {
   assertJobConfig,
@@ -27,7 +28,8 @@ export function loadNotificationJobConfig(
       "admin@example.com"
     ).trim(),
     mailMode: parseMailMode(read("NOTIFICATIONS_MAIL_MODE")),
-    fromEmail: (read("NOTIFICATIONS_FROM_EMAIL") ?? "TransitOps <noreply@example.com>").trim(),
+    // Prefer job-specific From; else shared EMAIL_FROM_* (Resend), else defaults.
+    fromEmail: resolveSenderAddress(env, read("NOTIFICATIONS_FROM_EMAIL")),
     resendApiKey: (read("RESEND_API_KEY") ?? "").trim() || null,
   };
 

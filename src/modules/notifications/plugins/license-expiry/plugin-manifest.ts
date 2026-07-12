@@ -18,6 +18,8 @@ export const licenseExpiryPluginManifest = {
     "NOTIFICATIONS_FALLBACK_EMAIL",
     "NOTIFICATIONS_MAIL_MODE",
     "NOTIFICATIONS_FROM_EMAIL",
+    "EMAIL_FROM_ADDRESS",
+    "EMAIL_FROM_NAME",
     "RESEND_API_KEY",
   ],
   scripts: {

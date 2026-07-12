@@ -32,6 +32,7 @@
 | [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; dark mode toggle |
 | [09-vehicles-api.md](./09-vehicles-api.md)       | Vehicles HTTP API + registry UI (ODO-22/23)       |
 | [10-notifications.md](./10-notifications.md)     | License-expiry outbox cron (ODO-40)               |
+| [../resend-setup.md](../resend-setup.md)         | Resend dashboard + local testing (no domain)      |
 
 ## Quick locks (current)
 

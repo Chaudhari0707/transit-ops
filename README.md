@@ -20,3 +20,10 @@ Notes:
 - The role dropdown **must** match the user’s real role or sign-in is rejected.
 - Defaults come from `AUTH_ADMIN_*` (see `.env.example`). The seed reuses `AUTH_ADMIN_PASSWORD` for all four roles.
 - These credentials are for **local development only** — do not use them in production.
+
+## Email (Resend) — local testing
+
+Transactional mail uses **Resend** only (no nodemailer).
+
+**Step-by-step:** [docs/resend-setup.md](./docs/resend-setup.md)  
+(account → API key → `.env.local` → `bun run email:test` → optional notifications run)

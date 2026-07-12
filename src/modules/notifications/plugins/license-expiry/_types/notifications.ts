@@ -51,6 +51,7 @@ export type OutboxStatusCounts = {
 
 export type SendEmailInput = {
   from: string;
+  html?: string;
   subject: string;
   text: string;
   to: string;
