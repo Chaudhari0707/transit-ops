@@ -1,9 +1,16 @@
 "use client";
 
+import * as React from "react";
+
 import { TripCreateForm } from "@/app/trips/_components/trip-create-form";
 import { TripLifecycleSteps } from "@/app/trips/_components/trip-lifecycle-steps";
 import { emptyCreateTripForm, tripToFormValues } from "@/app/trips/_lib/trip-form-helpers";
 import { mergeDriverOptions, mergeVehicleOptions } from "@/app/trips/_lib/trip-form-options";
+import {
+  listAssignableDrivers,
+  listAssignableVehicles,
+  listLocations,
+} from "@/app/trips/_lib/trips-api";
 import type { TripFormSession } from "@/app/trips/_types/trip-form";
 import {
   Dialog,
@@ -12,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ApiError } from "@/lib/api/fetch-api";
 import type { LocationRecord } from "@/modules/locations/_types/location";
 import type {
   AssignableDriverRecord,
@@ -23,9 +31,6 @@ export function TripFormDialog({
   open,
   session,
   trips,
-  locations,
-  vehicles,
-  drivers,
   onOpenChange,
   onRefresh,
   onRequestComplete,
@@ -35,17 +40,72 @@ export function TripFormDialog({
   open: boolean;
   session: TripFormSession | null;
   trips: TripRecord[];
-  locations: LocationRecord[];
-  vehicles: AssignableVehicleRecord[];
-  drivers: AssignableDriverRecord[];
   onOpenChange: (open: boolean) => void;
   onRefresh: () => void;
   onRequestComplete?: (trip: TripRecord) => void;
   onRequestCancel?: (tripId: string) => void;
   onError: (message: string) => void;
 }) {
+  const [locations, setLocations] = React.useState<LocationRecord[]>([]);
+  const [vehicles, setVehicles] = React.useState<AssignableVehicleRecord[]>([]);
+  const [drivers, setDrivers] = React.useState<AssignableDriverRecord[]>([]);
+  const [optionsLoading, setOptionsLoading] = React.useState(false);
+  const onErrorRef = React.useRef(onError);
+  onErrorRef.current = onError;
+
   const activeTrip =
     session?.kind === "trip" ? (trips.find((trip) => trip.id === session.tripId) ?? null) : null;
+  const sessionKey =
+    session == null ? null : session.kind === "trip" ? `trip:${session.tripId}` : "new";
+
+  React.useEffect(() => {
+    if (!open || !sessionKey) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadOptions() {
+      setOptionsLoading(true);
+
+      try {
+        const [locationResponse, vehicleResponse, driverResponse] = await Promise.all([
+          listLocations(),
+          listAssignableVehicles(),
+          listAssignableDrivers(),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setLocations(locationResponse.locations);
+        setVehicles(vehicleResponse.vehicles);
+        setDrivers(driverResponse.drivers);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof ApiError ? error.message : "Unable to load trip form options";
+        onErrorRef.current(message);
+        setLocations([]);
+        setVehicles([]);
+        setDrivers([]);
+      } finally {
+        if (!cancelled) {
+          setOptionsLoading(false);
+        }
+      }
+    }
+
+    void loadOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sessionKey]);
 
   const vehicleOptions = mergeVehicleOptions(vehicles, activeTrip);
   const driverOptions = mergeDriverOptions(drivers, activeTrip);
@@ -68,7 +128,7 @@ export function TripFormDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,48rem)] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[min(90vh,48rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -82,6 +142,7 @@ export function TripFormDialog({
           initialValues={initialValues}
           lifecycleStatus={lifecycleStatus}
           readOnly={activeTrip ? activeTrip.status !== "draft" : false}
+          optionsLoading={optionsLoading}
           locations={locations}
           vehicles={vehicleOptions}
           drivers={driverOptions}

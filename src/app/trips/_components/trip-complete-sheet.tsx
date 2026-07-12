@@ -57,6 +57,18 @@ export function TripCompleteSheet({
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const categoryItems = React.useMemo(
+    () =>
+      expenseCategories.map((category) => ({
+        label: `${category.name} (${category.code})`,
+        value: category.id,
+      })),
+    [expenseCategories],
+  );
+  const selectedCategory = expenseCategories.find(
+    (category) => category.id === values.expenseCategoryId,
+  );
+
   React.useEffect(() => {
     if (open && trip) {
       setValues({
@@ -192,21 +204,30 @@ export function TripCompleteSheet({
             >
               <Label htmlFor="complete-expense-category">Expense category</Label>
               <Select
+                items={categoryItems}
                 value={values.expenseCategoryId || null}
                 onValueChange={(value) => updateField("expenseCategoryId", value ?? "")}
               >
                 <SelectTrigger
                   id="complete-expense-category"
+                  className="w-full"
                   aria-invalid={!!fieldErrors.expenseCategoryId}
                 >
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder="Select category">
+                    {selectedCategory
+                      ? `${selectedCategory.name} (${selectedCategory.code})`
+                      : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {expenseCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name} ({category.code})
-                    </SelectItem>
-                  ))}
+                  {expenseCategories.map((category) => {
+                    const label = `${category.name} (${category.code})`;
+                    return (
+                      <SelectItem key={category.id} value={category.id} label={label}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               {fieldErrors.expenseCategoryId ? (

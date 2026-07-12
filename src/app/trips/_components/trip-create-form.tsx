@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { XIcon } from "lucide-react";
+import { Loader2Icon, XIcon } from "lucide-react";
 
 import {
   emptyCreateTripForm,
@@ -44,11 +44,25 @@ function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.Re
   );
 }
 
+function SelectLoadingItems({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground">
+      <Loader2Icon className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+      <span>Loading {label}…</span>
+    </div>
+  );
+}
+
+function SelectEmptyItems({ label }: { label: string }) {
+  return <div className="px-2 py-3 text-sm text-muted-foreground">No {label} available</div>;
+}
+
 export function TripCreateForm({
   tripId,
   initialValues,
   lifecycleStatus,
   readOnly,
+  optionsLoading,
   locations,
   vehicles,
   drivers,
@@ -64,6 +78,7 @@ export function TripCreateForm({
   initialValues: CreateTripFormValues;
   lifecycleStatus: TripStatus | "new";
   readOnly: boolean;
+  optionsLoading: boolean;
   locations: LocationRecord[];
   vehicles: AssignableVehicleRecord[];
   drivers: AssignableDriverRecord[];
@@ -80,13 +95,36 @@ export function TripCreateForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const vehicleOptions = sortVehiclesByCapacity(vehicles);
+  const selectedSource = locations.find((location) => location.id === values.sourceLocationId);
+  const selectedDestination = locations.find(
+    (location) => location.id === values.destinationLocationId,
+  );
   const selectedVehicle = vehicleOptions.find((vehicle) => vehicle.id === values.vehicleId);
+  const selectedDriver = drivers.find((driver) => driver.id === values.driverId);
+  const locationItems = React.useMemo(
+    () => locations.map((location) => ({ label: location.name, value: location.id })),
+    [locations],
+  );
+  const vehicleItems = React.useMemo(
+    () =>
+      vehicleOptions.map((vehicle) => ({
+        label: formatVehicleOptionLabel(vehicle),
+        value: vehicle.id,
+      })),
+    [vehicleOptions],
+  );
+  const driverItems = React.useMemo(
+    () => drivers.map((driver) => ({ label: driver.fullName, value: driver.id })),
+    [drivers],
+  );
   const capacityAlert = readOnly
     ? null
     : getCargoCapacityAlert(values.cargoWeightKg, selectedVehicle?.maxLoadCapacityKg);
 
   const parsed = createTripSchema.safeParse(values);
-  const canDispatch = !readOnly && parsed.success && !capacityAlert && !isSubmitting;
+  const selectsDisabled = readOnly || optionsLoading;
+  const canDispatch =
+    !readOnly && !optionsLoading && parsed.success && !capacityAlert && !isSubmitting;
   const isNewTrip = lifecycleStatus === "new";
   const isDraftTrip = lifecycleStatus === "draft";
   const isDispatchedTrip = lifecycleStatus === "dispatched";
@@ -175,102 +213,178 @@ export function TripCreateForm({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4">
-        <div className="grid gap-2" data-invalid={fieldErrors.sourceLocationId ? true : undefined}>
+      <div className="grid items-start gap-4 sm:grid-cols-2">
+        <div
+          className="flex flex-col gap-2"
+          data-invalid={fieldErrors.sourceLocationId ? true : undefined}
+        >
           <FieldLabel htmlFor="trip-source">Source</FieldLabel>
           <Select
+            items={locationItems}
             value={values.sourceLocationId || null}
             onValueChange={(value) => updateField("sourceLocationId", value ?? "")}
-            disabled={readOnly}
+            disabled={selectsDisabled}
           >
-            <SelectTrigger id="trip-source" aria-invalid={!!fieldErrors.sourceLocationId}>
-              <SelectValue placeholder="Select source" />
+            <SelectTrigger
+              id="trip-source"
+              className="w-full"
+              aria-invalid={!!fieldErrors.sourceLocationId}
+            >
+              <SelectValue placeholder={optionsLoading ? "Loading locations…" : "Select source"}>
+                {selectedSource?.name}
+              </SelectValue>
+              {optionsLoading ? (
+                <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : null}
             </SelectTrigger>
             <SelectContent>
-              {locations.map((location) => (
-                <SelectItem key={location.id} value={location.id}>
-                  {location.name}
-                </SelectItem>
-              ))}
+              {optionsLoading ? (
+                <SelectLoadingItems label="locations" />
+              ) : locations.length === 0 ? (
+                <SelectEmptyItems label="locations" />
+              ) : (
+                locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id} label={location.name}>
+                    {location.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
 
         <div
-          className="grid gap-2"
+          className="flex flex-col gap-2"
           data-invalid={fieldErrors.destinationLocationId ? true : undefined}
         >
           <FieldLabel htmlFor="trip-destination">Destination</FieldLabel>
           <Select
+            items={locationItems}
             value={values.destinationLocationId || null}
             onValueChange={(value) => updateField("destinationLocationId", value ?? "")}
-            disabled={readOnly}
+            disabled={selectsDisabled}
           >
-            <SelectTrigger id="trip-destination" aria-invalid={!!fieldErrors.destinationLocationId}>
-              <SelectValue placeholder="Select destination" />
+            <SelectTrigger
+              id="trip-destination"
+              className="w-full"
+              aria-invalid={!!fieldErrors.destinationLocationId}
+            >
+              <SelectValue
+                placeholder={optionsLoading ? "Loading locations…" : "Select destination"}
+              >
+                {selectedDestination?.name}
+              </SelectValue>
+              {optionsLoading ? (
+                <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : null}
             </SelectTrigger>
             <SelectContent>
-              {locations.map((location) => (
-                <SelectItem key={location.id} value={location.id}>
-                  {location.name}
-                </SelectItem>
-              ))}
+              {optionsLoading ? (
+                <SelectLoadingItems label="locations" />
+              ) : locations.length === 0 ? (
+                <SelectEmptyItems label="locations" />
+              ) : (
+                locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id} label={location.name}>
+                    {location.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="grid gap-2" data-invalid={fieldErrors.vehicleId ? true : undefined}>
+        <div
+          className="flex flex-col gap-2"
+          data-invalid={fieldErrors.vehicleId ? true : undefined}
+        >
           <FieldLabel htmlFor="trip-vehicle">Vehicle (available only)</FieldLabel>
           <Select
+            items={vehicleItems}
             value={values.vehicleId || null}
             onValueChange={(value) => updateField("vehicleId", value ?? "")}
-            disabled={readOnly}
+            disabled={selectsDisabled}
           >
             <SelectTrigger
               id="trip-vehicle"
               className="w-full"
               aria-invalid={!!fieldErrors.vehicleId}
             >
-              <SelectValue placeholder="Select vehicle by capacity">
+              <SelectValue
+                placeholder={optionsLoading ? "Loading vehicles…" : "Select vehicle by capacity"}
+              >
                 {selectedVehicle ? formatVehicleOptionLabel(selectedVehicle) : null}
               </SelectValue>
+              {optionsLoading ? (
+                <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : null}
             </SelectTrigger>
             <SelectContent>
-              {vehicleOptions.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {formatVehicleOptionLabel(vehicle)}
-                </SelectItem>
-              ))}
+              {optionsLoading ? (
+                <SelectLoadingItems label="vehicles" />
+              ) : vehicleOptions.length === 0 ? (
+                <SelectEmptyItems label="vehicles" />
+              ) : (
+                vehicleOptions.map((vehicle) => {
+                  const label = formatVehicleOptionLabel(vehicle);
+                  return (
+                    <SelectItem key={vehicle.id} value={vehicle.id} label={label}>
+                      {label}
+                    </SelectItem>
+                  );
+                })
+              )}
             </SelectContent>
           </Select>
-          {selectedVehicle ? (
-            <p className="text-xs text-muted-foreground">
-              Max load capacity: {formatVehicleCapacityKg(selectedVehicle.maxLoadCapacityKg)}
-            </p>
-          ) : null}
+          <p className="min-h-4 text-xs text-muted-foreground">
+            {selectedVehicle
+              ? `Max load capacity: ${formatVehicleCapacityKg(selectedVehicle.maxLoadCapacityKg)}`
+              : null}
+          </p>
         </div>
 
-        <div className="grid gap-2" data-invalid={fieldErrors.driverId ? true : undefined}>
+        <div className="flex flex-col gap-2" data-invalid={fieldErrors.driverId ? true : undefined}>
           <FieldLabel htmlFor="trip-driver">Driver (available only)</FieldLabel>
           <Select
+            items={driverItems}
             value={values.driverId || null}
             onValueChange={(value) => updateField("driverId", value ?? "")}
-            disabled={readOnly}
+            disabled={selectsDisabled}
           >
-            <SelectTrigger id="trip-driver" aria-invalid={!!fieldErrors.driverId}>
-              <SelectValue placeholder="Select driver" />
+            <SelectTrigger
+              id="trip-driver"
+              className="w-full"
+              aria-invalid={!!fieldErrors.driverId}
+            >
+              <SelectValue placeholder={optionsLoading ? "Loading drivers…" : "Select driver"}>
+                {selectedDriver?.fullName}
+              </SelectValue>
+              {optionsLoading ? (
+                <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : null}
             </SelectTrigger>
             <SelectContent>
-              {drivers.map((driver) => (
-                <SelectItem key={driver.id} value={driver.id}>
-                  {driver.fullName}
-                </SelectItem>
-              ))}
+              {optionsLoading ? (
+                <SelectLoadingItems label="drivers" />
+              ) : drivers.length === 0 ? (
+                <SelectEmptyItems label="drivers" />
+              ) : (
+                drivers.map((driver) => (
+                  <SelectItem key={driver.id} value={driver.id} label={driver.fullName}>
+                    {driver.fullName}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
+          {/* Keeps driver column height in step with vehicle capacity helper */}
+          <p className="min-h-4 text-xs" aria-hidden="true" />
         </div>
 
-        <div className="grid gap-2" data-invalid={fieldErrors.cargoWeightKg ? true : undefined}>
+        <div
+          className="flex flex-col gap-2"
+          data-invalid={fieldErrors.cargoWeightKg ? true : undefined}
+        >
           <FieldLabel htmlFor="trip-cargo">Cargo weight (kg)</FieldLabel>
           <Input
             id="trip-cargo"
@@ -284,7 +398,10 @@ export function TripCreateForm({
           />
         </div>
 
-        <div className="grid gap-2" data-invalid={fieldErrors.plannedDistanceKm ? true : undefined}>
+        <div
+          className="flex flex-col gap-2"
+          data-invalid={fieldErrors.plannedDistanceKm ? true : undefined}
+        >
           <FieldLabel htmlFor="trip-distance">Planned distance (km)</FieldLabel>
           <Input
             id="trip-distance"
@@ -321,7 +438,7 @@ export function TripCreateForm({
             <Button
               type="button"
               variant="outline"
-              disabled={!parsed.success || isSubmitting || readOnly}
+              disabled={!parsed.success || isSubmitting || readOnly || optionsLoading}
               onClick={() => void handleSaveDraft()}
             >
               Save draft

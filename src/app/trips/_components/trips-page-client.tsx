@@ -9,23 +9,12 @@ import { TripFormDialog } from "@/app/trips/_components/trip-form-dialog";
 import { TripsPageHeader } from "@/app/trips/_components/trips-page-header";
 import { TripsSignInCard } from "@/app/trips/_components/trips-sign-in-card";
 import { TripsWorkspace } from "@/app/trips/_components/trips-workspace";
-import {
-  cancelTrip,
-  listAssignableDrivers,
-  listAssignableVehicles,
-  listLocations,
-  listTrips,
-} from "@/app/trips/_lib/trips-api";
+import { cancelTrip, listTrips } from "@/app/trips/_lib/trips-api";
 import type { ExpenseCategoryOption, TripFormSession } from "@/app/trips/_types/trip-form";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ApiError } from "@/lib/api/fetch-api";
-import type { LocationRecord } from "@/modules/locations/_types/location";
-import type {
-  AssignableDriverRecord,
-  AssignableVehicleRecord,
-} from "@/modules/trips/_types/assignable";
 import type { TripRecord } from "@/modules/trips/_types/trip";
 
 const OPEN_NEW_TRIP_EVENT = "transitops:open-new-trip";
@@ -43,9 +32,6 @@ export function TripsPageClient({
     open: boolean;
     session: TripFormSession | null;
   }>({ open: false, session: null });
-  const [locations, setLocations] = React.useState<LocationRecord[]>([]);
-  const [vehicles, setVehicles] = React.useState<AssignableVehicleRecord[]>([]);
-  const [drivers, setDrivers] = React.useState<AssignableDriverRecord[]>([]);
   const [trips, setTrips] = React.useState<TripRecord[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [completeTripTarget, setCompleteTripTarget] = React.useState<TripRecord | null>(null);
@@ -89,17 +75,9 @@ export function TripsPageClient({
     setIsLoading(true);
 
     try {
-      const [locationResponse, vehicleResponse, driverResponse, tripResponse] = await Promise.all([
-        listLocations(),
-        listAssignableVehicles(),
-        listAssignableDrivers(),
-        listTrips(),
-      ]);
+      const tripResponse = await listTrips();
 
       setNeedsSignIn(false);
-      setLocations(locationResponse.locations);
-      setVehicles(vehicleResponse.vehicles);
-      setDrivers(driverResponse.drivers);
       setTrips(tripResponse.trips);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -189,9 +167,6 @@ export function TripsPageClient({
           }
         }}
         trips={trips}
-        locations={locations}
-        vehicles={vehicles}
-        drivers={drivers}
         onRefresh={() => void loadWorkspace()}
         onRequestComplete={(trip) => {
           closeTripDialog();
