@@ -1,4 +1,21 @@
 import type { ApiErrorCode, ApiErrorStatus } from "@/lib/api/_types/errors";
+import {
+  FORBIDDEN_MESSAGE,
+  isForbiddenErrorMessage,
+  isUnauthorizedErrorMessage,
+  SESSION_EXPIRED_TOAST,
+  toUserFacingApiError,
+  UNAUTHORIZED_MESSAGE,
+} from "@/lib/api/http-errors";
+
+export {
+  FORBIDDEN_MESSAGE,
+  isForbiddenErrorMessage,
+  isUnauthorizedErrorMessage,
+  SESSION_EXPIRED_TOAST,
+  toUserFacingApiError,
+  UNAUTHORIZED_MESSAGE,
+};
 
 /** Map service error messages to HTTP status codes (api-standards). */
 
@@ -17,11 +34,12 @@ export function errorMessage(error: unknown, fallback: string): string {
 export function resolveErrorCode(message: string): ApiErrorStatus {
   const normalized = message.trim().toLowerCase();
 
-  if (normalized === "unauthorized") {
+  // Exact legacy keywords + friendly user-facing phrases.
+  if (normalized === "unauthorized" || isUnauthorizedErrorMessage(message)) {
     return "401";
   }
 
-  if (normalized === "forbidden") {
+  if (normalized === "forbidden" || isForbiddenErrorMessage(message)) {
     return "403";
   }
 

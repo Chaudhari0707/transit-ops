@@ -1,3 +1,4 @@
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import type { UserRole } from "@/lib/auth/_types/user-role";
 import type {
   MaintenanceVehicleStatus,
@@ -7,13 +8,13 @@ import type {
 /** RBAC: Fleet Manager write; Financial Analyst view costs only. */
 export function assertMaintenanceReadRole(role: UserRole): void {
   if (role !== "fleet_manager" && role !== "financial_analyst") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
 export function assertMaintenanceWriteRole(role: UserRole): void {
   if (role !== "fleet_manager") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 

@@ -2,6 +2,7 @@ import "server-only";
 
 import { and, eq, isNull } from "drizzle-orm";
 
+import { UNAUTHORIZED_MESSAGE } from "@/lib/api/http-errors";
 import type { AuthSessionUser } from "@/lib/auth/_types/session";
 import { isUserRole } from "@/lib/auth/_types/user-role";
 import { auth } from "@/lib/auth/better-auth";
@@ -16,7 +17,7 @@ export async function requireAuthSession(headers: Headers): Promise<AuthSessionU
   const session = await auth.api.getSession({ headers });
 
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error(UNAUTHORIZED_MESSAGE);
   }
 
   const [row] = await getDb()
@@ -33,11 +34,11 @@ export async function requireAuthSession(headers: Headers): Promise<AuthSessionU
     .limit(1);
 
   if (!row || !row.isActive) {
-    throw new Error("Unauthorized");
+    throw new Error(UNAUTHORIZED_MESSAGE);
   }
 
   if (!isUserRole(row.role)) {
-    throw new Error("Unauthorized");
+    throw new Error(UNAUTHORIZED_MESSAGE);
   }
 
   return {

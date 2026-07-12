@@ -1,16 +1,17 @@
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import type { UserRole } from "@/lib/auth/_types/user-role";
 import type { DriverStatus, DriverWriteInput } from "@/modules/drivers/_types/drivers";
 
 /** FM + Safety full write; FA/Dispatcher cannot admin drivers. */
 export function assertDriverReadRole(role: UserRole): void {
   if (role !== "fleet_manager" && role !== "safety_officer") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
 export function assertDriverWriteRole(role: UserRole): void {
   if (role !== "fleet_manager" && role !== "safety_officer") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
