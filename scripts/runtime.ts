@@ -170,7 +170,7 @@ export function withDatabase<A, E>(
 export function upsertAdminUser(
   sql: ReturnType<typeof postgres>,
   adminUser: Awaited<
-    typeof seedAdminUser extends Effect.Effect<infer A, any, any> ? Promise<A> : never
+    typeof seedAdminUser extends Effect.Effect<infer A, unknown, unknown> ? Promise<A> : never
   >,
 ) {
   return Effect.gen(function* () {
@@ -222,14 +222,14 @@ export function deleteAdminUser(sql: ReturnType<typeof postgres>, adminEmail: st
 }
 
 export async function runScript(
-  program: Effect.Effect<any, any, never>,
+  program: Effect.Effect<unknown, unknown, never>,
   failurePrefix: string,
 ): Promise<void> {
   try {
     await Effect.runPromise(program);
   } catch (error) {
     console.error(failurePrefix, getErrorMessage(error, "Unknown script failure."));
-    process.exit(1);
+    throw error instanceof Error ? error : new Error("Unknown script failure.");
   }
 }
 

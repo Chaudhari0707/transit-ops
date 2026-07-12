@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db/client";
-import type { AuthModel } from "@/modules/auth/model";
+import type { AuthModel } from "@/modules/auth/_types/auth";
 
 function normalizeIdentifier(identifier: string) {
   return identifier.trim().toLowerCase();

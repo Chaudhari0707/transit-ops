@@ -1,9 +1,10 @@
 import { $ } from "bun";
 import { Config } from "effect";
+
 import { Console, databaseNameFromUrl, Effect, runScript } from "./runtime";
 
 function parseCliArguments() {
-  const cliArguments = process.argv.slice(2);
+  const cliArguments = Bun.argv.slice(2);
   let dumpFormat = "plain";
   let outputFileName = "";
 

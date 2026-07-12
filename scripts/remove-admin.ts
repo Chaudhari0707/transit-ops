@@ -1,4 +1,5 @@
 import { Config } from "effect";
+
 import { Console, deleteAdminUser, Effect, runScript, withDatabase } from "./runtime";
 
 const program = Effect.gen(function* () {

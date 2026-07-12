@@ -1,7 +1,7 @@
 import { Console, Effect, hashPassword, runScript } from "./runtime";
 
 const program = Effect.gen(function* () {
-  const plainTextPassword = process.argv[2]?.trim();
+  const plainTextPassword = Bun.argv[2]?.trim();
 
   if (!plainTextPassword) {
     yield* Effect.fail(new Error('Usage: bun run auth:hash -- "YourStrongPassword123!"'));

@@ -9,7 +9,7 @@ const globalDatabase = globalThis as typeof globalThis & {
 };
 
 function getDatabaseUrl() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = Bun.env.DATABASE_URL;
 
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required for the Elysia auth module.");
@@ -28,23 +28,19 @@ function getSqlClient() {
     prepare: false,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalDatabase.__elysiaTemplateSqlClient = sqlClient;
-  }
+  globalDatabase.__elysiaTemplateSqlClient = sqlClient;
 
   return sqlClient;
 }
 
 export function getDb() {
-  if (process.env.NODE_ENV !== "production" && globalDatabase.__elysiaTemplateDb) {
+  if (globalDatabase.__elysiaTemplateDb) {
     return globalDatabase.__elysiaTemplateDb;
   }
 
   const database = drizzle(getSqlClient(), { schema });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalDatabase.__elysiaTemplateDb = database;
-  }
+  globalDatabase.__elysiaTemplateDb = database;
 
   return database;
 }

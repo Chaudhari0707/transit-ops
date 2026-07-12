@@ -1,5 +1,3 @@
-import type { Rule } from "eslint";
-
 const RELATIVE_IMPORT_PATTERN = /^\.{1,2}\//;
 const WINDOWS_DRIVE_PATTERN = /^[A-Za-z]:/;
 
@@ -60,7 +58,7 @@ function relativePath(from: string, to: string) {
     commonLength += 1;
   }
 
-  const parentSegments = new Array(fromPath.segments.length - commonLength).fill("..");
+  const parentSegments = Array.from({ length: fromPath.segments.length - commonLength }).fill("..");
   const relativeSegments = [...parentSegments, ...toPath.segments.slice(commonLength)];
 
   return relativeSegments.length > 0 ? relativeSegments.join("/") : ".";
@@ -204,7 +202,7 @@ function rootsMatch(left: ParsedPath, right: ParsedPath) {
   return pathPartEquals(left.root, right.root, left.caseInsensitive || right.caseInsensitive);
 }
 
-const preferSrcAliasRule: Rule.RuleModule = {
+const preferSrcAliasRule = {
   meta: {
     type: "suggestion",
     docs: {
@@ -216,13 +214,29 @@ const preferSrcAliasRule: Rule.RuleModule = {
       useAlias: "Use @/ absolute imports instead of relative imports inside src.",
     },
   },
-  create(context) {
+  create(context: {
+    filename: string;
+    report(descriptor: {
+      node: unknown;
+      messageId: string;
+      fix?: (fixer: { replaceText(node: never, text: string): unknown }) => unknown;
+    }): void;
+  }) {
     const filename = context.filename;
-    const srcRoot = `${normalizePath(process.cwd())}/src`;
 
     if (!filename || filename === "<input>") {
       return {};
     }
+
+    const normalizedFilename = normalizePath(filename);
+    const srcMarker = "/src/";
+    const srcIndex = normalizedFilename.indexOf(srcMarker);
+
+    if (srcIndex === -1) {
+      return {};
+    }
+
+    const srcRoot = normalizedFilename.slice(0, srcIndex + srcMarker.length - 1);
 
     if (!isPathInsideRoot(filename, srcRoot)) {
       return {};
@@ -248,22 +262,22 @@ const preferSrcAliasRule: Rule.RuleModule = {
       context.report({
         node: sourceNode as never,
         messageId: "useAlias",
-        fix(fixer) {
+        fix(fixer: { replaceText(node: never, text: string): unknown }) {
           return fixer.replaceText(sourceNode as never, `"@/${aliasPath}"`);
         },
       });
     }
 
     return {
-      ImportDeclaration(node) {
-        if (!node.source) {
+      ImportDeclaration(node: unknown) {
+        if (!(node && typeof node === "object" && "source" in node && node.source)) {
           return;
         }
 
         reportIfRelative(node.source as SourceNode);
       },
-      ExportNamedDeclaration(node) {
-        if (!node.source) {
+      ExportNamedDeclaration(node: unknown) {
+        if (!(node && typeof node === "object" && "source" in node && node.source)) {
           return;
         }
 

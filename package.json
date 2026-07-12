@@ -2,71 +2,80 @@
   "name": "transit-ops",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "clean": "bun exec 'rm -rf .next node_modules'",
-    "cln": "bun exec 'rm -rf .next node_modules' && bun install && bun dev",
-    "lint": "eslint src --no-warn-ignored",
-    "lint:fix": "eslint src --fix --no-warn-ignored",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check": "bun run lint && bun run build",
-    "prepare": "husky",
     "auth:hash": "bun scripts/generate-password-hash.ts",
     "auth:register-admin": "bun scripts/register-admin.ts",
     "auth:remove-admin": "bun scripts/remove-admin.ts",
+    "build": "next build",
+    "build:rules": "bun run lint-rules/build-rules.ts",
+    "check": "bun run lint && bun run typecheck && bun run test:unit && bun run file-size && bun run build",
+    "check:fast": "bun run typecheck && bun run test:unit && bun run file-size",
+    "clean": "bun exec 'rm -rf .next node_modules'",
+    "cln": "bun exec 'rm -rf .next node_modules' && bun install && bun dev",
     "db:connect": "bun scripts/db-test-connection.ts",
     "db:export": "bun scripts/db-export.ts",
-    "db:export:sql": "bun scripts/db-export.ts --format=plain",
     "db:export:custom": "bun scripts/db-export.ts --format=custom",
-    "db:verify": "bun scripts/db-verify-schema.ts",
-    "db:status": "bun scripts/db-status.ts",
-    "db:seed": "bun scripts/db-seed.ts",
-    "db:reset": "bun scripts/db-reset.ts",
+    "db:export:sql": "bun scripts/db-export.ts --format=plain",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:reset": "bun scripts/db-reset.ts",
+    "db:seed": "bun scripts/db-seed.ts",
+    "db:status": "bun scripts/db-status.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:verify": "bun scripts/db-verify-schema.ts",
+    "dev": "next dev",
+    "file-size": "bun scripts/check-file-size.ts",
+    "fmt": "bunx oxfmt",
+    "fmt:check": "bunx oxfmt --check",
+    "lint": "bun run build:rules && bunx oxlint",
+    "lint:fix": "bun run build:rules && bunx oxlint --fix --fix-suggestions",
+    "prepare": "husky",
+    "start": "next start",
+    "test:unit": "bun test --isolate --pass-with-no-tests test/",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "gsap": "^3.15.0",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
     "@elysiajs/eden": "^1.4.9",
     "drizzle-orm": "^0.45.2",
-    "elysia": "^1.4.28",
-    "effect": "^3.21.2",
-    "postgres": "^3.4.9"
+    "effect": "^3.21.4",
+    "elysia": "^1.4.29",
+    "gsap": "^3.15.0",
+    "next": "16.2.10",
+    "postgres": "^3.4.9",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
-    "@eslint/compat": "2.0.5",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "25.6.0",
+    "@types/bun": "^1.3.14",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "10.3.0",
-    "eslint-config-next": "16.2.6",
-    "eslint-plugin-simple-import-sort": "13.0.0",
-    "eslint-plugin-unused-imports": "4.4.1",
+    "drizzle-kit": "^0.31.10",
     "husky": "9.1.7",
-    "lint-staged": "17.0.2",
-    "prettier": "3.8.3",
-    "prettier-plugin-tailwindcss": "0.8.0",
+    "lint-staged": "17.0.8",
+    "oxfmt": "^0.57.0",
+    "oxlint": "^1.71.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "@types/bun": "^1.3.13",
-    "drizzle-kit": "^0.31.10"
+    "typescript": "7.0.2"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs,json,md,css,scss,yml,yaml}": [
-      "prettier --write --ignore-unknown"
+      "bunx oxfmt"
     ],
     "src/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "eslint --fix --no-warn-ignored"
+      "bunx oxlint --fix --fix-suggestions"
+    ],
+    "lint-rules/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "bunx oxlint --fix --fix-suggestions"
+    ],
+    "scripts/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "bunx oxlint --fix --fix-suggestions"
+    ],
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "bunx oxlint --fix --fix-suggestions"
     ]
   },
   "ignoreScripts": [

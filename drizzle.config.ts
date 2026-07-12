@@ -1,5 +1,5 @@
-import { Config, Effect } from "effect";
 import { defineConfig } from "drizzle-kit";
+import { Config, Effect } from "effect";
 
 const databaseUrl = (() => {
   try {

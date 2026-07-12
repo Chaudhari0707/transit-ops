@@ -9,7 +9,7 @@ import {
 
 const program = withDatabase((sql, databaseUrl) =>
   Effect.gen(function* () {
-    if (process.env.NODE_ENV === "production") {
+    if (Bun.env.NODE_ENV === "production") {
       yield* Effect.fail(new Error("db:reset is disabled when NODE_ENV=production."));
     }
 

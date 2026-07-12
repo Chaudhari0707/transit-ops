@@ -1,4 +1,4 @@
-import { t, type UnwrapSchema } from "elysia";
+import { t } from "elysia";
 
 export const AuthModel = {
   signInBody: t.Object({
@@ -11,7 +11,3 @@ export const AuthModel = {
   }),
   signInInvalid: t.Literal("Invalid username or password"),
 } as const;
-
-export type AuthModel = {
-  [k in keyof typeof AuthModel]: UnwrapSchema<(typeof AuthModel)[k]>;
-};
