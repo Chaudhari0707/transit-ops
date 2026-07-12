@@ -1,8 +1,1 @@
-import type { UserRole } from "@/lib/db/schema/_types/roles";
-
-export type SessionUser = {
-  email: string;
-  id: string;
-  name: string;
-  role: UserRole;
-};
+export type { AuthSessionUser as SessionUser } from "@/lib/auth/_types/session";

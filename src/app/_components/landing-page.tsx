@@ -99,7 +99,7 @@ export function LandingPage() {
             </a>
           </nav>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" render={<Link href="/dashboard" />}>
+            <Button variant="ghost" render={<Link href="/sign-in" />}>
               Sign in
             </Button>
             <Button render={<Link href="/dashboard" />}>

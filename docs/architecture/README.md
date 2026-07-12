@@ -30,6 +30,7 @@
 | [06-domain-flows.md](./06-domain-flows.md)       | Workflows + trip complete sequence                |
 | [07-open-questions.md](./07-open-questions.md)   | Deferred: notification cron (revenue resolved)    |
 | [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; shadcn MCP first |
+| [09-vehicles-api.md](./09-vehicles-api.md)       | Vehicles HTTP API + registry UI (ODO-22/23)       |
 
 ## Quick locks (current)
 

@@ -11,9 +11,9 @@ const CREATE_ERRORS = [400, 401, 403, 409] as const;
 export const locationsModule = new Elysia({ name: "locations", prefix: "/locations" })
   .get(
     "/",
-    async ({ cookie, status }) => {
+    async ({ request, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await LocationsService.list(actor);
       } catch (error) {
         const message = errorMessage(error, "Unable to list locations");
@@ -31,9 +31,9 @@ export const locationsModule = new Elysia({ name: "locations", prefix: "/locatio
   )
   .post(
     "/",
-    async ({ body, cookie, status }) => {
+    async ({ body, request, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await LocationsService.create(actor, body);
       } catch (error) {
         const message = errorMessage(error, "Unable to create location");

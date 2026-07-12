@@ -1,0 +1,95 @@
+import { expect, test } from "@playwright/test";
+
+import { getPlaywrightRuntimeConfig } from "./support/env";
+import { gotoRoute } from "./support/navigation";
+import { fillSignInForm, gotoSignIn, submitSignIn } from "./support/sign-in-ui";
+
+const runtime = getPlaywrightRuntimeConfig();
+
+test.describe("sign-in page shell", () => {
+  test("renders email, password, role, and submit controls", async ({ page }) => {
+    await gotoSignIn(page);
+
+    await expect(page.locator("#email")).toBeVisible();
+    await expect(page.locator("#password")).toBeVisible();
+    await expect(page.locator("#role")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  });
+
+  test("landing page sign-in link routes to /sign-in", async ({ page }) => {
+    await gotoRoute(page, "/");
+    await page.getByRole("link", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/sign-in$/);
+  });
+});
+
+test.describe("sign-in validation UX", () => {
+  test("shows field errors when submitting an empty form", async ({ page }) => {
+    await gotoSignIn(page);
+    await submitSignIn(page);
+
+    await expect(page.locator("[data-slot=field-error]").first()).toContainText(
+      "Enter a valid email address",
+    );
+    await expect(page.getByText("Password is required")).toBeVisible();
+  });
+
+  test("shows an email validation error for malformed addresses", async ({ page }) => {
+    await gotoSignIn(page);
+    await page.locator("#email").fill("not-an-email");
+    await page.locator("#password").fill("password");
+    await submitSignIn(page);
+
+    await expect(page.getByText("Enter a valid email address")).toBeVisible();
+  });
+});
+
+test.describe("sign-in auth flows", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("rejects invalid credentials with a generic error", async ({ page }) => {
+    await gotoSignIn(page);
+    await fillSignInForm(page, {
+      email: runtime.adminEmail,
+      password: "definitely-wrong-password",
+      role: "fleet_manager",
+    });
+    await submitSignIn(page, { waitForAuthResponse: true });
+
+    await expect(page.getByText("Invalid username or password")).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in/);
+  });
+
+  test("rejects a valid password when the selected role does not match", async ({ page }) => {
+    await gotoSignIn(page);
+    await fillSignInForm(page, {
+      email: runtime.adminEmail,
+      password: runtime.adminPassword ?? "ChangeMe123!",
+      role: "dispatcher",
+    });
+    await submitSignIn(page, { waitForAuthResponse: true });
+
+    await expect(page.getByText("Invalid username or password")).toBeVisible({ timeout: 15_000 });
+    await expect(page).toHaveURL(/\/sign-in/);
+  });
+
+  test("signs in with matching role and opens the dashboard", async ({ page }) => {
+    await gotoSignIn(page);
+    await fillSignInForm(page, {
+      email: runtime.adminEmail,
+      password: runtime.adminPassword ?? "ChangeMe123!",
+      role: "fleet_manager",
+    });
+    await submitSignIn(page, { waitForAuthResponse: true });
+
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: "Operations Dashboard" })).toBeVisible();
+  });
+
+  test("redirects unauthenticated dashboard visits to sign-in", async ({ page }) => {
+    await gotoRoute(page, "/dashboard");
+
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fdashboard$/);
+    await expect(page.getByRole("heading", { name: "Sign in to TransitOps" })).toBeVisible();
+  });
+});

@@ -15,8 +15,9 @@ setup.beforeAll(async () => {
 
 setup("authenticate admin via API", async ({ page }) => {
   await signInWithApi(page, {
-    username: runtime.adminUsername,
+    email: runtime.adminEmail,
     password: runtime.adminPassword,
+    role: runtime.adminRole,
   });
 
   await page.context().storageState({ path: ADMIN_AUTH_FILE });

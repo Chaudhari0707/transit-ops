@@ -12,9 +12,9 @@ const DISPATCH_ERRORS = [400, 401, 403, 404, 409] as const;
 export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   .get(
     "/assignables/vehicles",
-    async ({ cookie, status }) => {
+    async ({ request, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.listAssignableVehicles(actor);
       } catch (error) {
         const message = errorMessage(error, "Unable to list assignable vehicles");
@@ -33,9 +33,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .get(
     "/assignables/drivers",
-    async ({ cookie, status }) => {
+    async ({ request, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.listAssignableDrivers(actor);
       } catch (error) {
         const message = errorMessage(error, "Unable to list assignable drivers");
@@ -54,9 +54,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .get(
     "/",
-    async ({ cookie, query, status }) => {
+    async ({ request, query, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.list(actor, query.status);
       } catch (error) {
         const message = errorMessage(error, "Unable to list trips");
@@ -76,9 +76,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .get(
     "/:id",
-    async ({ cookie, params, status }) => {
+    async ({ request, params, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.getById(actor, params.id);
       } catch (error) {
         const message = errorMessage(error, "Unable to get trip");
@@ -98,9 +98,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .post(
     "/",
-    async ({ body, cookie, status }) => {
+    async ({ body, request, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.create(actor, body);
       } catch (error) {
         const message = errorMessage(error, "Unable to create trip");
@@ -120,9 +120,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .patch(
     "/:id",
-    async ({ body, cookie, params, status }) => {
+    async ({ body, request, params, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.update(actor, params.id, body);
       } catch (error) {
         const message = errorMessage(error, "Unable to update trip");
@@ -143,9 +143,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .post(
     "/:id/dispatch",
-    async ({ cookie, params, status }) => {
+    async ({ request, params, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.dispatch(actor, params.id);
       } catch (error) {
         const message = errorMessage(error, "Unable to dispatch trip");
@@ -166,9 +166,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .post(
     "/:id/cancel",
-    async ({ body, cookie, params, status }) => {
+    async ({ body, request, params, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.cancel(actor, params.id, body.cancelReason);
       } catch (error) {
         const message = errorMessage(error, "Unable to cancel trip");
@@ -189,9 +189,9 @@ export const tripsModule = new Elysia({ name: "trips", prefix: "/trips" })
   )
   .post(
     "/:id/complete",
-    async ({ body, cookie, params, status }) => {
+    async ({ body, request, params, status }) => {
       try {
-        const actor = await requireUser(cookie.session);
+        const actor = await requireUser(request.headers);
         return await TripsService.complete(actor, params.id, body);
       } catch (error) {
         const message = errorMessage(error, "Unable to complete trip");
