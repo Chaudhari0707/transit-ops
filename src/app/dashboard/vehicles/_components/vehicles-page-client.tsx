@@ -223,20 +223,15 @@ export function VehiclesPageClient({ vehicleTypes, canWrite }: VehiclesPageClien
       </div>
 
       <div className="px-4 lg:px-6">
-        {loading ? (
-          <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
-            Loading vehicles…
-          </div>
-        ) : (
-          <VehiclesDataTable
-            vehicles={vehicles}
-            vehicleTypes={vehicleTypes}
-            canWrite={canWrite}
-            onEdit={openEdit}
-            onRetire={handleRetire}
-            onDelete={handleDelete}
-          />
-        )}
+        <VehiclesDataTable
+          vehicles={vehicles}
+          vehicleTypes={vehicleTypes}
+          canWrite={canWrite}
+          loading={loading}
+          onEdit={openEdit}
+          onRetire={handleRetire}
+          onDelete={handleDelete}
+        />
       </div>
 
       {canWrite ? (

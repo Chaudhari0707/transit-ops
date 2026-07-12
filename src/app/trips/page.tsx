@@ -35,7 +35,7 @@ export default async function TripsPage() {
         ) : (
           <>
             <SiteHeader title="Trips" roleLabel="Dispatcher / Safety" />
-            <div className="flex flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <div className="@container/main flex flex-1 flex-col gap-2 py-4 md:gap-6 md:py-6">
                 <AccessDenied description="Trip management is available to Dispatchers and Safety Officers only." />
               </div>

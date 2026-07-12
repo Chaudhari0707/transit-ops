@@ -9,7 +9,8 @@ const runtime = getPlaywrightRuntimeConfig();
 
 export default defineConfig({
   testDir: "./playwright",
-  timeout: 60_000,
+  // Elevated for slower first-compile + boneyard skeleton capture waits on data pages.
+  timeout: 90_000,
   fullyParallel: true,
   forbidOnly: Boolean(Bun.env.CI),
   retries: Bun.env.CI ? 2 : 0,
@@ -22,6 +23,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
+
   projects: [
     {
       name: "setup",
@@ -47,7 +49,8 @@ export default defineConfig({
     command: `bun run dev -- --hostname 127.0.0.1 --port ${runtime.port}`,
     url: runtime.baseURL,
     reuseExistingServer: !Bun.env.CI,
-    timeout: 120_000,
+    // Extra headroom when boneyard bones + Next compile cold-start together.
+    timeout: 180_000,
     env: {
       BETTER_AUTH_URL: runtime.baseURL,
       BETTER_AUTH_TRUSTED_ORIGINS: `${runtime.baseURL},http://localhost:${runtime.port}`,

@@ -1,29 +1,37 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { type LenisRef, ReactLenis } from "lenis/react";
 
 /**
  * SmoothScroll
  *
- * Drop-in provider that enables Lenis smooth scrolling across the whole page.
- * It syncs the Lenis RAF loop with the GSAP ticker so that GSAP animations
- * (ScrollTrigger, etc.) stay frame-perfect with the virtual scroll position.
+ * Lenis root smooth scroll is for marketing pages (landing) only.
+ * App shells (dashboard, domain routes) use an internal scroll region so
+ * the sidebar + header stay fixed — enabling document Lenis there makes
+ * the whole chrome scroll with the page.
  *
- * Usage — wrap your layout body once:
- *
- *   <SmoothScroll>{children}</SmoothScroll>
- *
- * To opt a specific element out of smooth scrolling add:
+ * To opt a nested element out of Lenis when it is active, add:
  *   data-lenis-prevent           – block all scroll propagation
  *   data-lenis-prevent-wheel     – block wheel events only
  *   data-lenis-prevent-touch     – block touch events only
  */
+function isMarketingPath(pathname: string): boolean {
+  return pathname === "/";
+}
+
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const lenisRef = useRef<LenisRef>(null);
+  const enableRootLenis = isMarketingPath(pathname);
 
   useEffect(() => {
+    if (!enableRootLenis) {
+      return;
+    }
+
     function update(time: number) {
       lenisRef.current?.lenis?.raf(time * 1000);
     }
@@ -35,7 +43,11 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     return () => {
       gsap.ticker.remove(update);
     };
-  }, []);
+  }, [enableRootLenis]);
+
+  if (!enableRootLenis) {
+    return <>{children}</>;
+  }
 
   return (
     <ReactLenis

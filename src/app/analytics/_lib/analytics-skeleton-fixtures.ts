@@ -1,0 +1,62 @@
+import type { AnalyticsReportUi } from "@/app/analytics/_types/analytics-ui";
+
+export const FIXTURE_REPORT: AnalyticsReportUi = {
+  summary: {
+    fleetUtilizationPercent: "72.5",
+    fuelEfficiencyKmPerL: "8.40",
+    fuelTotalInr: "245000.00",
+    fuelTotalLiters: "18250.00",
+    maintenanceTotalInr: "98000.00",
+    monthlyRevenueInr: "400000.00",
+    operationalCostInr: "343000.00",
+    roiFormula: "ROI = (Revenue − (Maintenance + Fuel)) / Acquisition Cost",
+    totalAcquisitionCostInr: "8500000.00",
+    totalDistanceKm: "153300.00",
+    vehicleCounts: {
+      available: 12,
+      inShop: 2,
+      onTrip: 5,
+      retired: 3,
+    },
+    vehicleRoiPercent: "6.71",
+  },
+  monthlyRevenue: [
+    { yearMonth: "2025-11", label: "Nov 2025", revenueInr: "360000.00" },
+    { yearMonth: "2025-12", label: "Dec 2025", revenueInr: "385000.00" },
+    { yearMonth: "2026-01", label: "Jan 2026", revenueInr: "410000.00" },
+    { yearMonth: "2026-02", label: "Feb 2026", revenueInr: "390000.00" },
+    { yearMonth: "2026-03", label: "Mar 2026", revenueInr: "425000.00" },
+    { yearMonth: "2026-04", label: "Apr 2026", revenueInr: "400000.00" },
+    { yearMonth: "2026-05", label: "May 2026", revenueInr: "440000.00" },
+    { yearMonth: "2026-06", label: "Jun 2026", revenueInr: "415000.00" },
+  ],
+  costliestVehicles: [
+    {
+      vehicleId: "veh-fixture-1",
+      vehicleRegistration: "MH12AB1234",
+      vehicleNameModel: "Tata 407",
+      acquisitionCostInr: "1250000.00",
+      fuelCostInr: "82000.00",
+      maintenanceCostInr: "35000.00",
+      operationalCostInr: "117000.00",
+    },
+    {
+      vehicleId: "veh-fixture-2",
+      vehicleRegistration: "MH14CD5678",
+      vehicleNameModel: "Ashok Leyland Dost",
+      acquisitionCostInr: "780000.00",
+      fuelCostInr: "54000.00",
+      maintenanceCostInr: "22000.00",
+      operationalCostInr: "76000.00",
+    },
+    {
+      vehicleId: "veh-fixture-3",
+      vehicleRegistration: "MH01EF9012",
+      vehicleNameModel: "Mahindra Bolero Pickup",
+      acquisitionCostInr: "920000.00",
+      fuelCostInr: "48000.00",
+      maintenanceCostInr: "28000.00",
+      operationalCostInr: "76000.00",
+    },
+  ],
+};

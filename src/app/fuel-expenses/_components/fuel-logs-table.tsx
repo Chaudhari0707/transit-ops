@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableLoadingRows } from "@/lib/boneyard/table-row-shimmer";
 
 function formatInr(value: string): string {
   const amount = Number(value);
@@ -25,10 +26,11 @@ function formatInr(value: string): string {
 }
 
 type FuelLogsTableProps = {
+  loading?: boolean;
   logs: FuelLogUi[];
 };
 
-export function FuelLogsTable({ logs }: FuelLogsTableProps) {
+export function FuelLogsTable({ logs, loading = false }: FuelLogsTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -48,7 +50,9 @@ export function FuelLogsTable({ logs }: FuelLogsTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {logs.length === 0 ? (
+            {loading ? (
+              <TableLoadingRows columnCount={4} rowCount={5} />
+            ) : logs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-muted-foreground">
                   No fuel logs yet.

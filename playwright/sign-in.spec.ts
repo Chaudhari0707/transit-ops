@@ -30,12 +30,34 @@ test.describe("sign-in page shell", () => {
 test.describe("sign-in validation UX", () => {
   test("shows field errors when submitting an empty form", async ({ page }) => {
     await gotoSignIn(page);
+    // Demo credentials autofill for the default role — clear them for this validation case.
+    await page.locator("#email").fill("");
+    await page.locator("#password").fill("");
     await submitSignIn(page);
 
     await expect(page.locator("[data-slot=field-error]").first()).toContainText(
       "Enter a valid email address",
     );
     await expect(page.getByText("Password is required")).toBeVisible();
+  });
+
+  test("autofills demo email and password when the role changes", async ({ page }) => {
+    await gotoSignIn(page);
+
+    await expect(page.locator("#email")).toHaveValue("admin@example.com");
+    await expect(page.locator("#password")).toHaveValue("password");
+
+    await page.locator("#role").click();
+    await page.getByRole("option", { name: "Dispatcher" }).click();
+
+    await expect(page.locator("#email")).toHaveValue("dispatcher@example.com");
+    await expect(page.locator("#password")).toHaveValue("password");
+
+    await page.locator("#role").click();
+    await page.getByRole("option", { name: "Financial Analyst" }).click();
+
+    await expect(page.locator("#email")).toHaveValue("finance@example.com");
+    await expect(page.locator("#password")).toHaveValue("password");
   });
 
   test("shows an email validation error for malformed addresses", async ({ page }) => {

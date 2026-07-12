@@ -219,31 +219,27 @@ export function DriversPageClient({ canWrite }: DriversPageClientProps) {
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading drivers…</p>
-      ) : (
-        <>
-          {canWrite ? (
-            <DriverForm
-              categories={categories}
-              editingId={editingId}
-              form={form}
-              isOnTrip={editingOnTrip}
-              onCancelEdit={cancelEdit}
-              onChange={setForm}
-              onSubmit={() => void handleSubmit()}
-              submitting={submitting}
-            />
-          ) : null}
-          <DriversTable
-            canWrite={canWrite}
-            deletingId={deletingId}
-            drivers={drivers}
-            onDelete={(id) => void handleDelete(id)}
-            onEdit={startEdit}
-          />
-        </>
-      )}
+      {canWrite ? (
+        <DriverForm
+          categories={categories}
+          editingId={editingId}
+          form={form}
+          isOnTrip={editingOnTrip}
+          onCancelEdit={cancelEdit}
+          onChange={setForm}
+          onSubmit={() => void handleSubmit()}
+          submitting={submitting}
+        />
+      ) : null}
+
+      <DriversTable
+        canWrite={canWrite}
+        deletingId={deletingId}
+        drivers={drivers}
+        loading={loading}
+        onDelete={(id) => void handleDelete(id)}
+        onEdit={startEdit}
+      />
     </div>
   );
 }

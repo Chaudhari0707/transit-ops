@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableLoadingRows } from "@/lib/boneyard/table-row-shimmer";
 
 function formatInr(value: string): string {
   const amount = Number(value);
@@ -40,6 +41,7 @@ function formatDate(iso: string | null): string {
 type MaintenanceLogsTableProps = {
   canWrite: boolean;
   closingId: number | null;
+  loading?: boolean;
   logs: MaintenanceLogUi[];
   onClose: (id: number) => void;
 };
@@ -47,6 +49,7 @@ type MaintenanceLogsTableProps = {
 export function MaintenanceLogsTable({
   canWrite,
   closingId,
+  loading = false,
   logs,
   onClose,
 }: MaintenanceLogsTableProps) {
@@ -74,7 +77,9 @@ export function MaintenanceLogsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {logs.length === 0 ? (
+            {loading ? (
+              <TableLoadingRows columnCount={7} rowCount={5} />
+            ) : logs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No maintenance logs yet. Log a service above.

@@ -2,6 +2,7 @@
 
 import type { DashboardKpisView } from "@/app/dashboard/_types/dashboard-ui";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ValueShimmerBar } from "@/lib/boneyard/table-row-shimmer";
 
 type KpiDef = {
   key: keyof Omit<DashboardKpisView, "vehicleStatus">;
@@ -23,7 +24,16 @@ const KPI_DEFS: KpiDef[] = [
   },
 ];
 
-export function KpiCards({ kpis }: { kpis: DashboardKpisView }) {
+/**
+ * Card chrome + labels always visible. Only the numeric value shimmers while loading.
+ */
+export function KpiCards({
+  kpis,
+  loading = false,
+}: {
+  kpis: DashboardKpisView;
+  loading?: boolean;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 lg:grid-cols-4 lg:px-6 xl:grid-cols-7">
       {KPI_DEFS.map((def) => {
@@ -35,7 +45,7 @@ export function KpiCards({ kpis }: { kpis: DashboardKpisView }) {
             <CardHeader className="gap-2">
               <CardDescription className="text-xs leading-snug">{def.label}</CardDescription>
               <CardTitle className="text-2xl font-semibold tracking-tight tabular-nums">
-                {display}
+                {loading ? <ValueShimmerBar className="h-8 w-12" /> : display}
               </CardTitle>
             </CardHeader>
           </Card>

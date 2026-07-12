@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableLoadingRows } from "@/lib/boneyard/table-row-shimmer";
 
 const statusVariant: Record<
   RecentTripView["status"],
@@ -59,11 +60,7 @@ export function RecentTripsTable({ trips, loading }: RecentTripsTableProps) {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  Loading trips…
-                </TableCell>
-              </TableRow>
+              <TableLoadingRows columnCount={5} rowCount={5} />
             ) : trips.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
