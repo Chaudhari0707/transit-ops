@@ -9,6 +9,7 @@
 	<backend>
 		<frameworkRule required="true" framework="elysiajs">Keep route work aligned with ElysiaJS patterns and best practices.</frameworkRule>
 		<apiDesignRule required="true">Keep backend changes modular, type-safe, and aligned with existing server patterns.</apiDesignRule>
+		<authRule required="true">Better Auth HTTP handler lives at `src/app/api/auth/[...all]/route.ts` — not in Elysia slugs. See `.agents/auth.md`.</authRule>
 		<apiStandardRule required="true">Mount only modules that comply with `.agents/api-standards.md`. Register new modules via `.use(...)` after export from `src/modules/index.ts`.</apiStandardRule>
 		<testRule required="true">New routes require failure-first pure tests under `test/modules/**` before merge.</testRule>
 	</backend>

@@ -117,9 +117,9 @@ Minimum bar before merging a new API: **pure failure tests green** for that doma
 
 ## 7. Security checklist (every mutation)
 
-- [ ] Auth required unless explicitly public
+- [ ] Better Auth session required unless explicitly public (`.agents/auth.md`)
 - [ ] Ownership check (user can only touch own resources)
-- [ ] Role/permission check for admin or ops routes
+- [ ] Role/permission check via Better Auth admin plugin + `permissions.ts`
 - [ ] Server revalidates all business invariants before persistence
 - [ ] Secrets never returned to client
 - [ ] Rate limit on abuse-prone public endpoints
