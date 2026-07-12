@@ -1,8 +1,11 @@
 import { Elysia } from "elysia";
 
-import { authModule } from "@/modules";
+import { authModule, fuelExpensesModule, maintenanceModule } from "@/modules";
 
-export const app = new Elysia({ prefix: "/api" }).use(authModule);
+export const app = new Elysia({ prefix: "/api" })
+  .use(authModule)
+  .use(maintenanceModule)
+  .use(fuelExpensesModule);
 
 export const GET = app.handle;
 export const POST = app.handle;

@@ -3,6 +3,7 @@ import "@/app/globals.css";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const fontSans = Inter({
@@ -36,7 +37,10 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          {children}
+          <Toaster />
+        </TooltipProvider>
       </body>
     </html>
   );
