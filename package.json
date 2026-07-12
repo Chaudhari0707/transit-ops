@@ -37,7 +37,12 @@
     "test:e2e:headed": "bun --bun playwright test --headed",
     "test:e2e:install": "bun --bun playwright install chromium",
     "test:unit": "bun test --isolate test/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "notifications:enqueue": "bun scripts/notifications-enqueue.ts",
+    "notifications:drain": "bun scripts/notifications-drain.ts",
+    "notifications:run": "bun scripts/notifications-run.ts",
+    "notifications:status": "bun scripts/notifications-status.ts",
+    "notifications:worker": "bun scripts/notifications-worker.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

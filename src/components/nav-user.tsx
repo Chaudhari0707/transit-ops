@@ -1,11 +1,15 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import {
   BellIcon,
   CircleUserRoundIcon,
   CreditCardIcon,
   EllipsisVerticalIcon,
   LogOutIcon,
+  MonitorIcon,
+  MoonIcon,
+  SunIcon,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,6 +20,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -35,6 +42,8 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const { setTheme } = useTheme();
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -86,6 +95,26 @@ export function NavUser({
                 <BellIcon />
                 Notifications
               </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <SunIcon />
+                  Theme
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setTheme("light")}>
+                    <SunIcon />
+                    Light
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    <MoonIcon />
+                    Dark
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")}>
+                    <MonitorIcon />
+                    System
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>

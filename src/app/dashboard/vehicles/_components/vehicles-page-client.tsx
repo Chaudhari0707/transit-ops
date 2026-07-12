@@ -10,6 +10,7 @@ import {
   toCreateBody,
   toUpdateBody,
   VEHICLE_STATUS_OPTIONS,
+  vehicleTypeSelectItems,
 } from "@/app/dashboard/vehicles/_lib/vehicle-helpers";
 import {
   createVehicle,
@@ -43,6 +44,18 @@ export function VehiclesPageClient({ vehicleTypes, canWrite }: VehiclesPageClien
   const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
   const [selected, setSelected] = useState<VehicleListItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const typeFilterItems = [
+    { value: "all", label: "All types" },
+    ...vehicleTypeSelectItems(vehicleTypes),
+  ];
+  const statusFilterItems = [
+    { value: "all", label: "All statuses" },
+    ...VEHICLE_STATUS_OPTIONS.map((option) => ({
+      value: option.value,
+      label: option.label,
+    })),
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -161,6 +174,7 @@ export function VehiclesPageClient({ vehicleTypes, canWrite }: VehiclesPageClien
               <Label htmlFor="filter-type">Vehicle type</Label>
               <Select
                 value={typeFilter}
+                items={typeFilterItems}
                 onValueChange={(value) => {
                   if (value) setTypeFilter(value);
                 }}
@@ -169,10 +183,9 @@ export function VehiclesPageClient({ vehicleTypes, canWrite }: VehiclesPageClien
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  {vehicleTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name} ({type.code})
+                  {typeFilterItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -182,6 +195,7 @@ export function VehiclesPageClient({ vehicleTypes, canWrite }: VehiclesPageClien
               <Label htmlFor="filter-status">Status</Label>
               <Select
                 value={statusFilter}
+                items={statusFilterItems}
                 onValueChange={(value) => {
                   if (value) setStatusFilter(value as VehicleStatus | "all");
                 }}
@@ -190,10 +204,9 @@ export function VehiclesPageClient({ vehicleTypes, canWrite }: VehiclesPageClien
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {VEHICLE_STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {statusFilterItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

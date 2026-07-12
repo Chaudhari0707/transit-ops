@@ -406,7 +406,7 @@ License expiry (and future) email pipeline.
 
 **Indexes:** `(status, scheduled_for)`.
 
-**Worker note (ADR-041):** Table is designed now; cron/worker that drains outbox is a **later task** — not v1 required behavior.
+**Worker note (ADR-056):** Enqueue/drain via `bun run notifications:*`; schedule time from `NOTIFICATIONS_SCHEDULE_TIME` (UTC). See `10-notifications.md`.
 
 ---
 

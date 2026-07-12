@@ -35,6 +35,7 @@ Adapt block layout to TransitOps RBAC nav; do not invent alternate design system
 - Strict **shadcn native** only (+ Tailwind utility on those components)
 - No MUI / Ant / Chakra / random CSS component libs
 - Theme tokens via shadcn/CSS variables
+- **Dark mode (ODO-38 / ADR-057):** `ThemeProvider` (`next-themes`) on root layout; Light / Dark / System via header `ThemeToggle` and user menu — not a Settings module
 - One PR: only components you actually use
 
 ## Agents / devs

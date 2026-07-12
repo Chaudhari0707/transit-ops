@@ -18,7 +18,7 @@ PDF persona “Driver” = app role **`dispatcher`**.
 
 | Role                  | Maintenance | Dashboard                  | Master data | Users | Documents | Settings screen  | Notifications cron |
 | --------------------- | ----------- | -------------------------- | ----------- | ----- | --------- | ---------------- | ------------------ |
-| **Fleet Manager**     | ✓ write     | view (type+status filters) | ✓           | ✓     | ✓         | **Out of scope** | later              |
+| **Fleet Manager**     | ✓ write     | view (type+status filters) | ✓           | ✓     | ✓         | **Out of scope** | ops scripts (`notifications:*`) |
 | **Dispatcher**        | —           | view                       | —           | —     | —         | —                | —                  |
 | **Safety Officer**    | —           | view                       | —           | —     | —         | —                | —                  |
 | **Financial Analyst** | view costs  | view                       | —           | —     | —         | —                | —                  |

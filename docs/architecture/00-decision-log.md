@@ -44,7 +44,7 @@ Append-only style. Do not rewrite history; supersede with a new ADR row.
 | ADR-038 | 2026-07-12 | Driver edit authority    | **Fleet Manager + Safety Officer both full driver edit**                                                    | Resolved OQ-05                                                                      |
 | ADR-039 | 2026-07-12 | Dashboard region filter  | **SUPERSEDED by ADR-043** — regions feature cancelled                                                       | No region table / filter                                                            |
 | ADR-040 | 2026-07-12 | Upload limits            | **ENV-configured** size + allowed types; defaults max **5MB**, allow all types                              | Resolved OQ-07                                                                      |
-| ADR-041 | 2026-07-12 | Notification cron        | **Deferred** (outbox table remains; worker/schedule later)                                                  | Resolved OQ-08 as still-later                                                       |
+| ADR-041 | 2026-07-12 | Notification cron        | **SUPERSEDED by ADR-055** — was deferred                                                                    | Outbox table designed first                                                         |
 | ADR-042 | 2026-07-12 | Product UI flow ref      | **Excalidraw mockup** is canonical visual flow                                                              | Project share only — no machine paths in repo                                       |
 | ADR-043 | 2026-07-12 | Regions cancelled        | **No `regions` table**; trip `source`/`destination` free text; **no region filter**                         | Excalidraw uses place names; filter without geo model not needed                    |
 | ADR-044 | 2026-07-12 | Operational cost         | **Fuel + Maintenance** = `SUM(fuel) + SUM(maintenance_logs.cost)`                                           | Mockup: TOTAL OP COST = FUEL + MAINTENANCE; tolls are separate                      |
@@ -59,6 +59,8 @@ Append-only style. Do not rewrite history; supersede with a new ADR row.
 | ADR-052 | 2026-07-12 | Dashboard filters        | **Vehicle type + status only** (no region)                                                                  | Excalidraw had region; cancelled with ADR-043                                       |
 | ADR-054 | 2026-07-12 | UI stack                 | **shadcn only**; **blocks first** (`login-02`, `dashboard-01`); else components; **MCP first**              | No custom UI libs; see `08-ui-shadcn.md`                                            |
 | ADR-055 | 2026-07-12 | Trip locations           | **`locations` table** replaces free-text source/destination; FK on trips; source ≠ destination              | Dispatcher dropdowns; fleet manager can add locations                               |
+| ADR-056 | 2026-07-12 | Notification cron        | **Implemented** via outbox + env-scheduled scripts (`notifications:*`); Resend or log mailer                | Supersedes ADR-041 deferral; resolves OQ-08                                         |
+| ADR-057 | 2026-07-12 | Dark mode                | **next-themes** + header/user Light/Dark/System toggle; CSS variables via `.dark`                           | No Settings screen (ADR-046); shell affordance only                                 |
 
 ## Scaffold note (migration intent)
 

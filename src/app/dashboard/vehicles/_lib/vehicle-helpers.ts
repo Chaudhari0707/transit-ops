@@ -31,6 +31,14 @@ export function typeLabel(types: VehicleTypeOption[], vehicleTypeId: string): st
   return match ? `${match.name} (${match.code})` : "Unknown type";
 }
 
+/** Base UI Select needs `items` so the trigger shows labels, not raw UUIDs. */
+export function vehicleTypeSelectItems(types: VehicleTypeOption[]) {
+  return types.map((type) => ({
+    value: type.id,
+    label: `${type.name} (${type.code})`,
+  }));
+}
+
 export function formatInr(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -92,9 +100,9 @@ export function emptyVehicleFormDefaults(defaultTypeId: string) {
     registrationNumber: "",
     nameModel: "",
     vehicleTypeId: defaultTypeId,
-    maxLoadCapacityKg: 1000,
-    odometerKm: 0,
-    acquisitionCostInr: 0,
+    maxLoadCapacityKg: "1000",
+    odometerKm: "0",
+    acquisitionCostInr: "0",
     notes: "",
   };
 }

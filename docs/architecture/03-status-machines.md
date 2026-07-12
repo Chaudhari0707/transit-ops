@@ -102,4 +102,4 @@ pending → sent | failed | cancelled
 failed → pending (retry)
 ```
 
-Used by `notification_outbox` worker/cron (implementation later).
+Used by `notification_outbox` worker/scripts (`bun run notifications:drain`).

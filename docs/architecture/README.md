@@ -28,9 +28,10 @@
 | [04-business-rules.md](./04-business-rules.md)   | Rules + op cost formula                           |
 | [05-rbac-matrix.md](./05-rbac-matrix.md)         | Role access                                       |
 | [06-domain-flows.md](./06-domain-flows.md)       | Workflows + trip complete sequence                |
-| [07-open-questions.md](./07-open-questions.md)   | Deferred: real revenue, notification cron         |
-| [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; shadcn MCP first |
+| [07-open-questions.md](./07-open-questions.md)   | Deferred: real revenue (OQ-01)                    |
+| [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; dark mode toggle |
 | [09-vehicles-api.md](./09-vehicles-api.md)       | Vehicles HTTP API + registry UI (ODO-22/23)       |
+| [10-notifications.md](./10-notifications.md)     | License-expiry outbox cron (ODO-40)               |
 
 ## Quick locks (current)
 
