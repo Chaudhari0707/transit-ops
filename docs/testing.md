@@ -51,3 +51,9 @@ bunx --bun playwright show-report             # HTML report
 ```
 
 The Playwright config starts the dev server on port `3001` unless `PLAYWRIGHT_BASE_URL` points at an existing server.
+
+### Sign-in e2e notes
+
+- Workers are fixed to **1** so Next.js dev compilation/hydration does not race parallel browsers.
+- Playwright starts the app with `AUTH_RATE_LIMIT_ENABLED=false`. Browser tests share one client IP; Better Auth’s 5-attempt lockout would otherwise fail later cases after intentional wrong-password tests. Unit tests still cover lockout via unique `X-Forwarded-For` values.
+- If you reuse an existing dev server (`reuseExistingServer`), restart it after lockout flakes, or run it with `AUTH_RATE_LIMIT_ENABLED=false`.
