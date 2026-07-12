@@ -167,6 +167,10 @@ export function withDatabase<A, E>(
   );
 }
 
+/**
+ * Upsert a fleet_manager into Better Auth `user` + credential `account`.
+ * Transitional until Better Auth seed helpers own bootstrap accounts.
+ */
 export function upsertAdminUser(
   sql: ReturnType<typeof postgres>,
   adminUser: Awaited<
@@ -175,29 +179,74 @@ export function upsertAdminUser(
 ) {
   return Effect.gen(function* () {
     const passwordHash = yield* hashPassword(adminUser.password);
+    const userId = crypto.randomUUID();
+    const accountId = crypto.randomUUID();
 
     const [result] = yield* Effect.tryPromise({
       try: () =>
-        sql<{ id: string; email: string; username: string }[]>`
-          INSERT INTO admin_users (username, full_name, email, phone_number, password_hash, is_active)
-          VALUES (
-            ${adminUser.username},
-            ${adminUser.fullName},
-            ${adminUser.email},
-            ${adminUser.phoneNumber},
-            ${passwordHash},
-            TRUE
-          )
-          ON CONFLICT (email) DO UPDATE
+        sql.begin(async (tx) => {
+          const [upsertedUser] = await tx<{ id: string; email: string; name: string }[]>`
+            INSERT INTO "user" (
+              id, name, email, email_verified, role, phone_number, is_active, created_at, updated_at
+            )
+            VALUES (
+              ${userId},
+              ${adminUser.fullName},
+              ${adminUser.email},
+              TRUE,
+              'fleet_manager',
+              ${adminUser.phoneNumber},
+              TRUE,
+              NOW(),
+              NOW()
+            )
+            ON CONFLICT (email) DO UPDATE
+              SET
+                name = EXCLUDED.name,
+                phone_number = EXCLUDED.phone_number,
+                is_active = TRUE,
+                deleted_at = NULL,
+                updated_at = NOW()
+            RETURNING id, email, name
+          `;
+
+          if (!upsertedUser) {
+            throw new Error("Admin user upsert did not return a record.");
+          }
+
+          await tx`
+            INSERT INTO account (
+              id, user_id, account_id, provider_id, password, created_at, updated_at
+            )
+            VALUES (
+              ${accountId},
+              ${upsertedUser.id},
+              ${upsertedUser.id},
+              'credential',
+              ${passwordHash},
+              NOW(),
+              NOW()
+            )
+            ON CONFLICT DO NOTHING
+          `;
+
+          await tx`
+            UPDATE account
             SET
-              username = EXCLUDED.username,
-              full_name = EXCLUDED.full_name,
-              phone_number = EXCLUDED.phone_number,
-              password_hash = EXCLUDED.password_hash,
-              is_active = TRUE,
+              password = ${passwordHash},
               updated_at = NOW()
-          RETURNING id, email, username
-        `,
+            WHERE user_id = ${upsertedUser.id}
+              AND provider_id = 'credential'
+          `;
+
+          return [
+            {
+              id: upsertedUser.id,
+              email: upsertedUser.email,
+              username: adminUser.username,
+            },
+          ];
+        }),
       catch: (error) => new Error(getErrorMessage(error, "Failed to upsert the admin user.")),
     });
 
@@ -213,7 +262,7 @@ export function deleteAdminUser(sql: ReturnType<typeof postgres>, adminEmail: st
   return Effect.tryPromise({
     try: () =>
       sql<{ id: string; email: string }[]>`
-        DELETE FROM admin_users
+        DELETE FROM "user"
         WHERE email = ${adminEmail}
         RETURNING id, email
       `,

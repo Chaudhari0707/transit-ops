@@ -1,6 +1,6 @@
 # 02 — Database Schema (v1 Locked Design)
 
-> Implementation target for Drizzle/Postgres. **No code written yet** — this is the contract.
+> Implementation target for Drizzle/Postgres. **Implemented** in `src/lib/db/schema/*` (Drizzle). Apply with `bun run db:push` (or migrate).
 
 ## 2.1 Postgres ENUMs (status machines only)
 
@@ -461,8 +461,8 @@ erDiagram
 
 ## 2.12 Scaffold migration impact
 
-| Existing            | Action when implementing                    |
-| ------------------- | ------------------------------------------- |
-| `admin_users`       | Drop / replace with Better Auth core tables |
-| Auth username login | Email + password + role dropdown validation |
-| Empty domain schema | Create domain tables above (no regions)     |
+| Existing            | Action when implementing                    | Status                                                                                               |
+| ------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `admin_users`       | Drop / replace with Better Auth core tables | Done — tables are `user` / `session` / `account` / `verification`                                    |
+| Auth username login | Email + password + role dropdown validation | Partial — transitional sign-in uses email + credential `account`; Better Auth handlers still pending |
+| Empty domain schema | Create domain tables above (no regions)     | Done — see `src/lib/db/schema/`                                                                      |

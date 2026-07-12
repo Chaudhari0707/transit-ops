@@ -27,10 +27,10 @@ See `.agents/testing-standards.md` for failure-first conventions.
 
 ### Prerequisites
 
-1. Copy `.env.example` → `.env.local` and set `DATABASE_URL` + Better Auth vars (`BETTER_AUTH_SECRET`, etc.).
-2. Run `bun run db:seed` and seed Better Auth users (`scripts/seed-better-auth-users.ts` when added) for authenticated specs.
+1. Copy `.env.example` → `.env` (and optional `.env.local` overrides). Set `DATABASE_URL`, seed vars, and Better Auth placeholders (`BETTER_AUTH_SECRET`, etc.) — see comments in `.env.example`.
+2. Run `bun run db:seed` (and multi-role Better Auth seed when added) for authenticated specs.
 3. Run `bun run test:e2e:install` once to install Chromium.
-4. Set `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001` (default in `.env.example`).
+4. Keep `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001` in sync with app/auth URLs (defaults in `.env.example`).
 
 Auth E2E uses Better Auth sign-in UI — see `.agents/auth.md`. Legacy API sign-in specs (`playwright/auth-api.spec.ts`) apply until Better Auth migration completes.
 
