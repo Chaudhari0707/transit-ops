@@ -15,7 +15,7 @@ await loadTestEnvFiles();
 
 const databaseUrl = Bun.env.DATABASE_URL?.trim();
 const adminEmail = Bun.env.AUTH_ADMIN_EMAIL?.trim() ?? "admin@example.com";
-const adminPassword = Bun.env.AUTH_ADMIN_PASSWORD?.trim() ?? "ChangeMe123!";
+const adminPassword = Bun.env.AUTH_ADMIN_PASSWORD?.trim() ?? "password";
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 
 const fixtureEmails = {
