@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import type {
   MaintenanceFormState,
   MaintenanceTypeOption,
@@ -16,6 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+/** Base UI Select falls back to raw value (UUID) until the option label is resolved. */
+function selectValue(id: string, resolvedLabel: string | null | undefined): string | null {
+  if (!id || !resolvedLabel) {
+    return null;
+  }
+  return id;
+}
+
+function vehicleLabel(vehicle: MaintenanceVehicleOption): string {
+  return `${vehicle.nameModel} · ${vehicle.registrationNumber}`;
+}
 
 type MaintenanceLogFormProps = {
   disabled: boolean;
@@ -36,8 +50,20 @@ export function MaintenanceLogForm({
   types,
   vehicles,
 }: MaintenanceLogFormProps) {
+  const selectedVehicle = vehicles.find((vehicle) => vehicle.id === form.vehicleId);
   const selectedType = types.find((type) => type.id === form.maintenanceTypeId);
+  const vehicleText = selectedVehicle ? vehicleLabel(selectedVehicle) : undefined;
+  const typeText = selectedType?.name;
   const isOtherType = selectedType?.code.toUpperCase() === "OTHER";
+
+  const vehicleItems = useMemo(
+    () => vehicles.map((vehicle) => ({ label: vehicleLabel(vehicle), value: vehicle.id })),
+    [vehicles],
+  );
+  const typeItems = useMemo(
+    () => types.map((type) => ({ label: type.name, value: type.id })),
+    [types],
+  );
 
   const canSubmit =
     !disabled &&
@@ -60,7 +86,8 @@ export function MaintenanceLogForm({
         <div className="grid gap-2">
           <Label htmlFor="maint-vehicle">Vehicle</Label>
           <Select
-            value={form.vehicleId || null}
+            items={vehicleItems}
+            value={selectValue(form.vehicleId, vehicleText)}
             onValueChange={(value) => {
               if (value) onChange({ ...form, vehicleId: value });
             }}
@@ -68,15 +95,26 @@ export function MaintenanceLogForm({
           >
             <SelectTrigger id="maint-vehicle" className="w-full">
               <SelectValue
-                placeholder={vehicles.length === 0 ? "No available vehicles" : "Select vehicle"}
-              />
+                placeholder={
+                  vehicles.length === 0
+                    ? "No available vehicles"
+                    : disabled
+                      ? "Loading…"
+                      : "Select vehicle"
+                }
+              >
+                {vehicleText}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {vehicles.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.nameModel} · {vehicle.registrationNumber}
-                </SelectItem>
-              ))}
+              {vehicles.map((vehicle) => {
+                const label = vehicleLabel(vehicle);
+                return (
+                  <SelectItem key={vehicle.id} value={vehicle.id} label={label}>
+                    {label}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -84,7 +122,8 @@ export function MaintenanceLogForm({
         <div className="grid gap-2">
           <Label htmlFor="maint-type">Service type</Label>
           <Select
-            value={form.maintenanceTypeId || null}
+            items={typeItems}
+            value={selectValue(form.maintenanceTypeId, typeText)}
             onValueChange={(value) => {
               if (!value) return;
               onChange({
@@ -97,14 +136,16 @@ export function MaintenanceLogForm({
                     : "",
               });
             }}
-            disabled={disabled}
+            disabled={disabled || types.length === 0}
           >
             <SelectTrigger id="maint-type" className="w-full">
-              <SelectValue placeholder="Select type" />
+              <SelectValue placeholder={types.length === 0 ? "Loading…" : "Select type"}>
+                {typeText}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {types.map((type) => (
-                <SelectItem key={type.id} value={type.id}>
+                <SelectItem key={type.id} value={type.id} label={type.name}>
                   {type.name}
                 </SelectItem>
               ))}
