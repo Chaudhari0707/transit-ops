@@ -52,7 +52,7 @@ const data = {
     },
     {
       title: "Drivers",
-      url: "#",
+      url: "/drivers",
       icon: <UsersIcon />,
     },
     {

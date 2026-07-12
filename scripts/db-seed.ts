@@ -568,6 +568,20 @@ const program = Effect.gen(function* () {
       yield* Console.log(`      Role     : financial_analyst`);
       yield* Console.log(`      Record ID: ${finance.id}`);
 
+      const safety = yield* upsertCredentialUser(sql, {
+        email: "safety@example.com",
+        fullName: "Demo Safety Officer",
+        password: adminUser.password,
+        phoneNumber: "9222222222",
+        role: "safety_officer",
+        username: "safety",
+      });
+      yield* Console.log("\n✅  Safety officer user seeded:");
+      yield* Console.log(`      Email    : safety@example.com`);
+      yield* Console.log(`      Password : ${adminUser.password}`);
+      yield* Console.log(`      Role     : safety_officer`);
+      yield* Console.log(`      Record ID: ${safety.id}`);
+
       yield* Console.log("\n🚛  Fleet sample data:");
       yield* seedFleetVehicles(sql, result.id);
       yield* seedFleetDrivers(sql, result.id);
@@ -581,7 +595,7 @@ const program = Effect.gen(function* () {
   );
 
   yield* Console.log(
-    `\n✅  Seed complete — masters, users, fleet, maintenance, fuel & expenses for demo.\n`,
+    `\n✅  Seed complete — masters, users (FM/FA/Safety), fleet (${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers), maintenance, fuel & expenses.\n`,
   );
 });
 

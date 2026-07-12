@@ -39,7 +39,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
       },
       dependencies: ["setup"],
-      testMatch: /auth-api\.spec\.ts/,
+      testMatch: /(?:auth-api|drivers)\.spec\.ts/,
     },
   ],
   webServer: {
