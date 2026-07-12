@@ -65,12 +65,12 @@ completed ──∅──► (terminal)
 cancelled ──∅──► (terminal)
 ```
 
-| From       | To         | Actor      | Side effects                                                                                                                                                                                |
-| ---------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| draft      | dispatched | Dispatcher | Validate capacity, license, statuses; set vehicle+driver `on_trip`; snapshot `start_odometer_km`; set `dispatched_at`                                                                       |
-| draft      | cancelled  | Dispatcher | No vehicle/driver change (still available)                                                                                                                                                  |
-| dispatched | completed  | Dispatcher | Require end odometer + fuel L + cost + **expenses log row(s)**; update vehicle odometer; insert `fuel_logs` + `expenses`; vehicle+driver → `available`; trip `completed` (atomic — ADR-053) |
-| dispatched | cancelled  | Dispatcher | vehicle+driver → `available`; set `cancelled_at` + reason                                                                                                                                   |
+| From       | To         | Actor      | Side effects                                                                                                                                                                                                                                        |
+| ---------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| draft      | dispatched | Dispatcher | Validate capacity, license, statuses; set vehicle+driver `on_trip`; snapshot `start_odometer_km`; set `dispatched_at`                                                                                                                               |
+| draft      | cancelled  | Dispatcher | No vehicle/driver change (still available)                                                                                                                                                                                                          |
+| dispatched | completed  | Dispatcher | Require end odometer + fuel L + cost + **expenses log row(s)**; update vehicle odometer; insert `fuel_logs` + `expenses` + **`revenue_logs`** (planned_km × capacity × rate); vehicle+driver → `available`; trip `completed` (atomic — ADR-053/056) |
+| dispatched | cancelled  | Dispatcher | vehicle+driver → `available`; set `cancelled_at` + reason                                                                                                                                                                                           |
 
 **Edit rules**
 

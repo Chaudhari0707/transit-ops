@@ -4,7 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type { getDb } from "@/lib/db/client";
-import { locations, trips } from "@/lib/db/schema";
+import { drivers, locations, trips, vehicles } from "@/lib/db/schema";
 
 const destinationLocations = alias(locations, "destination_locations");
 
@@ -24,10 +24,22 @@ export async function fetchTripBundle(db: DbClient, tripId: string) {
         code: destinationLocations.code,
         name: destinationLocations.name,
       },
+      vehicle: {
+        id: vehicles.id,
+        maxLoadCapacityKg: vehicles.maxLoadCapacityKg,
+        registrationNumber: vehicles.registrationNumber,
+        nameModel: vehicles.nameModel,
+      },
+      driver: {
+        id: drivers.id,
+        fullName: drivers.fullName,
+      },
     })
     .from(trips)
     .innerJoin(locations, eq(trips.sourceLocationId, locations.id))
     .innerJoin(destinationLocations, eq(trips.destinationLocationId, destinationLocations.id))
+    .innerJoin(vehicles, eq(trips.vehicleId, vehicles.id))
+    .innerJoin(drivers, eq(trips.driverId, drivers.id))
     .where(and(eq(trips.id, tripId), sql`${trips.deletedAt} is null`))
     .limit(1);
 
@@ -58,10 +70,22 @@ export async function fetchTripList(db: DbClient, status?: (typeof trips.$inferS
         code: destinationLocations.code,
         name: destinationLocations.name,
       },
+      vehicle: {
+        id: vehicles.id,
+        maxLoadCapacityKg: vehicles.maxLoadCapacityKg,
+        registrationNumber: vehicles.registrationNumber,
+        nameModel: vehicles.nameModel,
+      },
+      driver: {
+        id: drivers.id,
+        fullName: drivers.fullName,
+      },
     })
     .from(trips)
     .innerJoin(locations, eq(trips.sourceLocationId, locations.id))
     .innerJoin(destinationLocations, eq(trips.destinationLocationId, destinationLocations.id))
+    .innerJoin(vehicles, eq(trips.vehicleId, vehicles.id))
+    .innerJoin(drivers, eq(trips.driverId, drivers.id))
     .where(and(...conditions))
     .orderBy(sql`${trips.createdAt} desc`);
 }

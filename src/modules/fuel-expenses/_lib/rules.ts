@@ -1,9 +1,10 @@
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import type { UserRole } from "@/lib/auth/_types/user-role";
 
 /** Mockup screen 6 + RBAC: FA writes; FM/FA can view costs. */
 export function assertFuelExpenseReadRole(role: UserRole): void {
   if (role !== "financial_analyst" && role !== "fleet_manager") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
@@ -13,7 +14,7 @@ export function assertFuelExpenseReadRole(role: UserRole): void {
  */
 export function assertFuelExpenseWriteRole(role: UserRole): void {
   if (role !== "financial_analyst" && role !== "fleet_manager") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import {
   assertAllowedExpenseCategoryCode,
   assertFuelExpenseReadRole,
@@ -12,7 +13,7 @@ import {
 
 describe("assertFuelExpenseReadRole", () => {
   test("rejects dispatcher", () => {
-    expect(() => assertFuelExpenseReadRole("dispatcher")).toThrow("Forbidden");
+    expect(() => assertFuelExpenseReadRole("dispatcher")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows finance and fleet manager", () => {
@@ -23,7 +24,7 @@ describe("assertFuelExpenseReadRole", () => {
 
 describe("assertFuelExpenseWriteRole", () => {
   test("rejects safety officer", () => {
-    expect(() => assertFuelExpenseWriteRole("safety_officer")).toThrow("Forbidden");
+    expect(() => assertFuelExpenseWriteRole("safety_officer")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows finance", () => {

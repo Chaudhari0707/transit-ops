@@ -1,12 +1,19 @@
-import type { locations, trips } from "@/lib/db/schema";
+import type { drivers, locations, trips, vehicles } from "@/lib/db/schema";
 import type { TripRecord } from "@/modules/trips/_types/trip";
 
 type LocationRow = Pick<typeof locations.$inferSelect, "id" | "code" | "name">;
+type VehicleRow = Pick<
+  typeof vehicles.$inferSelect,
+  "id" | "maxLoadCapacityKg" | "nameModel" | "registrationNumber"
+>;
+type DriverRow = Pick<typeof drivers.$inferSelect, "id" | "fullName">;
 
 export function toTripRecord(
   trip: typeof trips.$inferSelect,
   sourceLocation: LocationRow,
   destinationLocation: LocationRow,
+  vehicle: VehicleRow,
+  driver: DriverRow,
 ): TripRecord {
   return {
     actualDistanceKm: trip.actualDistanceKm,
@@ -22,6 +29,10 @@ export function toTripRecord(
       name: destinationLocation.name,
     },
     dispatchedAt: trip.dispatchedAt?.toISOString() ?? null,
+    driver: {
+      fullName: driver.fullName,
+      id: driver.id,
+    },
     driverId: trip.driverId,
     endOdometerKm: trip.endOdometerKm,
     fuelConsumedLiters: trip.fuelConsumedLiters,
@@ -36,6 +47,12 @@ export function toTripRecord(
     startOdometerKm: trip.startOdometerKm,
     status: trip.status,
     updatedAt: trip.updatedAt.toISOString(),
+    vehicle: {
+      id: vehicle.id,
+      maxLoadCapacityKg: vehicle.maxLoadCapacityKg,
+      nameModel: vehicle.nameModel,
+      registrationNumber: vehicle.registrationNumber,
+    },
     vehicleId: trip.vehicleId,
   };
 }

@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import {
   errorMessage,
+  FORBIDDEN_MESSAGE,
   resolveErrorCode,
   resolveErrorCodeFor,
   resolveErrorCodeNumber,
+  UNAUTHORIZED_MESSAGE,
 } from "@/lib/api/errors";
 
 describe("resolveErrorCode failure-first edge cases", () => {
@@ -16,6 +18,13 @@ describe("resolveErrorCode failure-first edge cases", () => {
 
   test("maps Forbidden", () => {
     expect(resolveErrorCode("Forbidden")).toBe("403");
+  });
+
+  test("maps friendly permission and session phrases", () => {
+    expect(resolveErrorCode(FORBIDDEN_MESSAGE)).toBe("403");
+    expect(resolveErrorCode(UNAUTHORIZED_MESSAGE)).toBe("401");
+    expect(resolveErrorCode("do not have permission to edit")).toBe("403");
+    expect(resolveErrorCode("session has expired")).toBe("401");
   });
 
   test("maps not-found suffix for domain resources", () => {

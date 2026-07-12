@@ -49,17 +49,20 @@ src/proxy.ts           # Coarse session gate only (getSessionCookie)
 
 ## Rules
 
-| Rule               | Detail                                                                                            |
-| ------------------ | ------------------------------------------------------------------------------------------------- |
-| Single auth stack  | Better Auth only. No duplicate sign-in APIs in Elysia modules.                                    |
-| Server config      | `src/lib/auth/better-auth.ts` with `drizzleAdapter`, `Bun.env` for secrets                        |
-| Client             | `better-auth/react` client from `auth-client.ts` — never raw fetch to auth endpoints from UI      |
-| Session in modules | `auth.api.getSession({ headers })` in services — not custom cookie parsing                        |
-| Route protection   | `src/proxy.ts` for coarse gates; fine-grained permissions in services                             |
-| Schema             | Better Auth tables (`user`, `session`, `account`, `verification`, etc.) in `src/lib/db/schema.ts` |
-| Env vars           | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS` — see `.env.example`       |
-| E2E                | Playwright signs in via Better Auth UI (`playwright/support/better-auth.ts`)                      |
-| Seeds              | `scripts/seed-better-auth-users.ts` for local test accounts                                       |
+| Rule               | Detail                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| Single auth stack  | Better Auth only. No duplicate sign-in APIs in Elysia modules.                                            |
+| Server config      | `src/lib/auth/better-auth.ts` with `drizzleAdapter`, `Bun.env` for secrets                                |
+| Client             | `better-auth/react` client from `auth-client.ts` — never raw fetch to auth endpoints from UI              |
+| Session in modules | `auth.api.getSession({ headers })` in services — not custom cookie parsing                                |
+| Route protection   | `src/proxy.ts` (cookie only) + `requirePageSession` (DAL); no LoginForm inside app shell                  |
+| Nav / page RBAC    | `src/lib/auth/_lib/sidebar-nav.ts` + `canAccessPageModule`; matrix: `docs/architecture/05-rbac-matrix.md` |
+| 401 / 403 copy     | `src/lib/api/http-errors.ts` — user-facing messages; never raw `"Forbidden"` in UI toasts                 |
+| Schema             | Better Auth tables (`user`, `session`, `account`, `verification`, etc.) in `src/lib/db/schema.ts`         |
+| Env vars           | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS` — see `.env.example`               |
+| E2E                | Playwright signs in via Better Auth UI (`playwright/support/better-auth.ts`)                              |
+| Seeds              | `scripts/seed-better-auth-users.ts` for local test accounts                                               |
+| Types              | Exported auth types only under `src/lib/auth/_types/` (lint: `no-exported-types-in-source`)               |
 
 ---
 

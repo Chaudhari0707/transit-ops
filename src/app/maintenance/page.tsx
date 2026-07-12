@@ -1,12 +1,12 @@
 import type { CSSProperties } from "react";
-import { headers } from "next/headers";
 
 import { MaintenancePageClient } from "@/app/maintenance/_components/maintenance-page-client";
+import { AccessDenied } from "@/components/access-denied";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { isUserRole } from "@/lib/auth/_types/user-role";
-import { auth } from "@/lib/auth/better-auth";
+import { canAccessPageModule } from "@/lib/auth/_lib/sidebar-nav";
+import { requirePageSession } from "@/lib/auth/require-page-session";
 
 const shellStyle = {
   "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -14,39 +14,25 @@ const shellStyle = {
 } as CSSProperties;
 
 export default async function MaintenancePage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const role = session?.user && "role" in session.user ? session.user.role : null;
-
-  if (!session?.user || !isUserRole(role)) {
-    return (
-      <SidebarProvider style={shellStyle}>
-        <AppSidebar variant="inset" />
-        <SidebarInset>
-          <SiteHeader title="Maintenance" roleLabel="Fleet Manager" />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2 py-4 md:gap-6 md:py-6">
-              <div className="px-4 lg:px-6">
-                <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                  Sign in required. Maintenance writes require Fleet Manager.
-                </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    );
-  }
-
-  const canWrite = role === "fleet_manager";
+  const session = await requirePageSession("/maintenance");
+  const allowed = canAccessPageModule(session.role, "maintenance");
+  const canWrite = session.role === "fleet_manager";
 
   return (
     <SidebarProvider style={shellStyle}>
-      <AppSidebar variant="inset" />
+      <AppSidebar
+        variant="inset"
+        user={{ email: session.email, name: session.name, role: session.role }}
+      />
       <SidebarInset>
         <SiteHeader title="Maintenance" roleLabel="Fleet Manager" />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2 py-4 md:gap-6 md:py-6">
-            <MaintenancePageClient canWrite={canWrite} />
+            {allowed ? (
+              <MaintenancePageClient canWrite={canWrite} />
+            ) : (
+              <AccessDenied description="Maintenance is available to Fleet Managers and Financial Analysts only." />
+            )}
           </div>
         </div>
       </SidebarInset>

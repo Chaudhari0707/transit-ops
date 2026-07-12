@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import {
   assertCanViewVehicles,
   assertCanWriteVehicles,
@@ -10,22 +11,22 @@ import {
 describe("vehicle RBAC failure modes", () => {
   test("safety_officer cannot view fleet", () => {
     expect(canViewVehicles("safety_officer")).toBe(false);
-    expect(() => assertCanViewVehicles("safety_officer")).toThrow("Forbidden");
+    expect(() => assertCanViewVehicles("safety_officer")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("dispatcher cannot write fleet", () => {
     expect(canWriteVehicles("dispatcher")).toBe(false);
-    expect(() => assertCanWriteVehicles("dispatcher")).toThrow("Forbidden");
+    expect(() => assertCanWriteVehicles("dispatcher")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("financial_analyst cannot write fleet", () => {
     expect(canWriteVehicles("financial_analyst")).toBe(false);
-    expect(() => assertCanWriteVehicles("financial_analyst")).toThrow("Forbidden");
+    expect(() => assertCanWriteVehicles("financial_analyst")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("safety_officer cannot write fleet", () => {
     expect(canWriteVehicles("safety_officer")).toBe(false);
-    expect(() => assertCanWriteVehicles("safety_officer")).toThrow("Forbidden");
+    expect(() => assertCanWriteVehicles("safety_officer")).toThrow(FORBIDDEN_MESSAGE);
   });
 });
 

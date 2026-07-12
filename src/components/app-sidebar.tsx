@@ -27,72 +27,113 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { canCreateTrip, canSeeNavItem } from "@/lib/auth/_lib/sidebar-nav";
+import type { SidebarNavId } from "@/lib/auth/_types/sidebar-nav";
+import { USER_ROLE_LABELS, type UserRole } from "@/lib/auth/_types/user-role";
 
-const data = {
-  user: {
-    name: "Rajesh Sharma",
-    email: "rajesh@transitops.in",
-    avatar: "",
+const NAV_MAIN_CATALOG: Array<{
+  id: SidebarNavId;
+  title: string;
+  url: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    id: "dashboard",
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: <LayoutDashboardIcon />,
   },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: <LayoutDashboardIcon />,
-    },
-    {
-      title: "Trips",
-      url: "#",
-      icon: <RouteIcon />,
-    },
-    {
-      title: "Fleet",
-      url: "/dashboard/vehicles",
-      icon: <TruckIcon />,
-    },
-    {
-      title: "Drivers",
-      url: "/drivers",
-      icon: <UsersIcon />,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: <BarChart3Icon />,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Help",
-      url: "#",
-      icon: <CircleHelpIcon />,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: <SearchIcon />,
-    },
-  ],
-  documents: [
-    {
-      name: "Maintenance",
-      url: "/maintenance",
-      icon: <WrenchIcon />,
-    },
-    {
-      name: "Fuel & Expenses",
-      url: "/fuel-expenses",
-      icon: <FuelIcon />,
-    },
-    {
-      name: "Documents",
-      url: "#",
-      icon: <TruckIcon />,
-    },
-  ],
+  {
+    id: "trips",
+    title: "Trips",
+    url: "/trips",
+    icon: <RouteIcon />,
+  },
+  {
+    id: "fleet",
+    title: "Fleet",
+    url: "/dashboard/vehicles",
+    icon: <TruckIcon />,
+  },
+  {
+    id: "drivers",
+    title: "Drivers",
+    url: "/drivers",
+    icon: <UsersIcon />,
+  },
+  {
+    id: "analytics",
+    title: "Analytics",
+    url: "#",
+    icon: <BarChart3Icon />,
+  },
+];
+
+const DOCUMENTS_CATALOG: Array<{
+  id: SidebarNavId;
+  name: string;
+  url: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    id: "maintenance",
+    name: "Maintenance",
+    url: "/maintenance",
+    icon: <WrenchIcon />,
+  },
+  {
+    id: "fuel_expenses",
+    name: "Fuel & Expenses",
+    url: "/fuel-expenses",
+    icon: <FuelIcon />,
+  },
+  {
+    id: "documents",
+    name: "Documents",
+    url: "#",
+    icon: <TruckIcon />,
+  },
+];
+
+const NAV_SECONDARY_CATALOG: Array<{
+  id: SidebarNavId;
+  title: string;
+  url: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    id: "help",
+    title: "Help",
+    url: "#",
+    icon: <CircleHelpIcon />,
+  },
+  {
+    id: "search",
+    title: "Search",
+    url: "#",
+    icon: <SearchIcon />,
+  },
+];
+
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  user: {
+    email: string;
+    name: string;
+    role: UserRole;
+  };
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  const navMain = NAV_MAIN_CATALOG.filter((item) => canSeeNavItem(user.role, item.id)).map(
+    ({ title, url, icon }) => ({ title, url, icon }),
+  );
+  const documents = DOCUMENTS_CATALOG.filter((item) => canSeeNavItem(user.role, item.id)).map(
+    ({ name, url, icon }) => ({ name, url, icon }),
+  );
+  const navSecondary = NAV_SECONDARY_CATALOG.filter((item) =>
+    canSeeNavItem(user.role, item.id),
+  ).map(({ title, url, icon }) => ({ title, url, icon }));
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -111,12 +152,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} label="Operations" />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navMain} showNewTrip={canCreateTrip(user.role)} />
+        {documents.length > 0 ? <NavDocuments items={documents} label="Operations" /> : null}
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          user={{
+            name: user.name,
+            email: user.email,
+            roleLabel: USER_ROLE_LABELS[user.role],
+          }}
+        />
       </SidebarFooter>
     </Sidebar>
   );

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import { requireAnyRole, requireRole } from "@/lib/auth/_lib/require-role";
 import type { AuthSessionUser } from "@/lib/auth/_types/session";
 import { USER_ROLES, type UserRole } from "@/lib/auth/_types/user-role";
@@ -16,11 +17,11 @@ function actor(role: UserRole): AuthSessionUser {
 
 describe("requireRole failure modes", () => {
   test("throws Forbidden when actor role is not allowed", () => {
-    expect(() => requireRole(actor("dispatcher"), ["fleet_manager"])).toThrow("Forbidden");
+    expect(() => requireRole(actor("dispatcher"), ["fleet_manager"])).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("throws Forbidden for empty allow-list", () => {
-    expect(() => requireRole(actor("fleet_manager"), [])).toThrow("Forbidden");
+    expect(() => requireRole(actor("fleet_manager"), [])).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows exact matching role", () => {
@@ -31,12 +32,14 @@ describe("requireRole failure modes", () => {
 describe("requireAnyRole failure modes", () => {
   test("rejects safety_officer for fleet-write roles", () => {
     expect(() => requireAnyRole(actor("safety_officer"), ["fleet_manager", "dispatcher"])).toThrow(
-      "Forbidden",
+      FORBIDDEN_MESSAGE,
     );
   });
 
   test("rejects financial_analyst for trip-write roles", () => {
-    expect(() => requireAnyRole(actor("financial_analyst"), ["dispatcher"])).toThrow("Forbidden");
+    expect(() => requireAnyRole(actor("financial_analyst"), ["dispatcher"])).toThrow(
+      FORBIDDEN_MESSAGE,
+    );
   });
 
   test("returns the same actor when role is allowed", () => {
