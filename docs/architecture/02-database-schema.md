@@ -20,7 +20,21 @@ All other categorizations → **master tables**.
 
 ## 2.2 Master / config tables
 
-> **No `regions` table** (ADR-043). Trip endpoints are free text.
+> **No `regions` table** (ADR-043). Trip endpoints use the `locations` table (ADR-055).
+
+### `locations`
+
+| Column                               | Type         | Null | Default           | Notes                          |
+| ------------------------------------ | ------------ | ---- | ----------------- | ------------------------------ |
+| id                                   | uuid         | NO   | gen_random_uuid() | **PK**                         |
+| code                                 | varchar(32)  | NO   |                   | Unique e.g. `GND_DEPOT`        |
+| name                                 | varchar(160) | NO   |                   | Display label for dropdowns    |
+| is_active                            | boolean      | NO   | true              | Inactive hidden from selection |
+| created_at / updated_at / deleted_at |              |      |                   | Soft-delete supported          |
+
+**Constraints:** unique `code` among non-deleted rows.
+
+**Seed:** `scripts/seed-locations-data.ts` (10 Gujarat logistics hubs).
 
 ### `vehicle_types`
 
@@ -235,8 +249,8 @@ Optional table: Better Auth `rateLimit` when `storage: "database"`.
 | ------------------------------------ | ------------- | ---- | ----------------- | ----------------------------------------- |
 | id                                   | uuid          | NO   | gen_random_uuid() | **PK**                                    |
 | status                               | trip_status   | NO   | `draft`           |                                           |
-| source                               | varchar(255)  | NO   |                   | Free text e.g. `Gandhinagar Depot`        |
-| destination                          | varchar(255)  | NO   |                   | Free text e.g. `Ahmedabad Hub`            |
+| source_location_id                   | uuid          | NO   |                   | **FK → locations.id**                     |
+| destination_location_id              | uuid          | NO   |                   | **FK → locations.id**                     |
 | vehicle_id                           | uuid          | NO   |                   | **FK → vehicles.id**                      |
 | driver_id                            | uuid          | NO   |                   | **FK → drivers.id**                       |
 | cargo_weight_kg                      | numeric(12,2) | NO   |                   | > 0; ≤ vehicle capacity on dispatch       |
@@ -262,7 +276,7 @@ Optional table: Better Auth `rateLimit` when `storage: "database"`.
 - At most one **dispatched** trip per driver:  
   `UNIQUE(driver_id) WHERE status = 'dispatched' AND deleted_at IS NULL`
 
-**Checks:** cargo/planned_distance > 0; on complete end_odometer ≥ start_odometer.
+**Checks:** cargo/planned_distance > 0; `source_location_id <> destination_location_id`; on complete end_odometer ≥ start_odometer.
 
 **Complete contract (ADR-053):** same transaction must write `fuel_logs` + one or more `expenses` rows (with `trip_id`) then set trip completed and free vehicle/driver.
 

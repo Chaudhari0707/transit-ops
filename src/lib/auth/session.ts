@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 
 import type { AuthSessionUser } from "@/lib/auth/_types/session";
-import { isUserRole, type UserRole } from "@/lib/auth/_types/user-role";
+import { isUserRole } from "@/lib/auth/_types/user-role";
 import { auth } from "@/lib/auth/better-auth";
 import { getDb } from "@/lib/db/client";
 import { user } from "@/lib/db/schema";
@@ -52,16 +52,4 @@ export async function requireAuthSession(headers: Headers): Promise<AuthSessionU
 export const requireAuthActor = requireAuthSession;
 export const requireSessionUser = requireAuthSession;
 
-export function requireRole(actor: AuthSessionUser, allowedRoles: readonly UserRole[]): void {
-  if (!allowedRoles.includes(actor.role)) {
-    throw new Error("Forbidden");
-  }
-}
-
-export function requireAnyRole(
-  actor: AuthSessionUser,
-  allowedRoles: readonly UserRole[],
-): AuthSessionUser {
-  requireRole(actor, allowedRoles);
-  return actor;
-}
+export { requireAnyRole, requireRole } from "@/lib/auth/_lib/require-role";
