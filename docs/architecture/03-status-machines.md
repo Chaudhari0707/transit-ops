@@ -74,7 +74,7 @@ cancelled ──∅──► (terminal)
 
 **Edit rules**
 
-- `draft`: full edit (vehicle, driver, free-text source/destination, cargo, planned distance).
+- `draft`: full edit (vehicle, driver, source/destination locations, cargo, planned distance).
 - `dispatched` / `completed` / `cancelled`: core fields immutable; only complete/cancel actions on dispatched.
 
 ---

@@ -144,4 +144,37 @@ export const FLEET_DRIVER_SEEDS = [
     status: "off_duty",
     notes: "Weekend off — returns Monday",
   },
+  // Compliance fixtures for Drivers UI filters / BR-03–04 demos
+  {
+    fullName: "Karan Shah",
+    licenseNumber: "GJ2016001100",
+    licenseCategoryCode: "LMV",
+    licenseExpiryDate: "2027-12-01",
+    contactNumber: "9876500011",
+    safetyScore: 72,
+    status: "suspended",
+    notes: "Suspended — safety review pending (not assignable)",
+  },
+  {
+    fullName: "Meera Iyer",
+    licenseNumber: "GJ2014002200",
+    licenseCategoryCode: "HMV",
+    // Expired relative to 2026 seed/demo timeline
+    licenseExpiryDate: "2025-12-31",
+    contactNumber: "9876500022",
+    safetyScore: 85,
+    status: "available",
+    notes: "License expired — blocked from dispatch (BR-03)",
+  },
+  {
+    fullName: "Rohit Singh",
+    licenseNumber: "GJ2020003300",
+    licenseCategoryCode: "LMV",
+    // Within 30-day “expiring soon” window for 2026-07 demo
+    licenseExpiryDate: "2026-07-28",
+    contactNumber: "9876500033",
+    safetyScore: 89,
+    status: "available",
+    notes: "License expiring soon — compliance amber",
+  },
 ] as const;

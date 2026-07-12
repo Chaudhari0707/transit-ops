@@ -17,6 +17,7 @@ import { user } from "@/lib/db/schema/auth";
 import { maintenanceStatusEnum, tripStatusEnum } from "@/lib/db/schema/enums";
 import { drivers, vehicles } from "@/lib/db/schema/fleet";
 import { deletedAt, timestamps } from "@/lib/db/schema/helpers";
+import { locations } from "@/lib/db/schema/locations";
 import { expenseCategories, maintenanceTypes } from "@/lib/db/schema/masters";
 
 export const trips = pgTable(
@@ -24,8 +25,12 @@ export const trips = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     status: tripStatusEnum("status").notNull().default("draft"),
-    source: varchar("source", { length: 255 }).notNull(),
-    destination: varchar("destination", { length: 255 }).notNull(),
+    sourceLocationId: uuid("source_location_id")
+      .notNull()
+      .references(() => locations.id),
+    destinationLocationId: uuid("destination_location_id")
+      .notNull()
+      .references(() => locations.id),
     vehicleId: uuid("vehicle_id")
       .notNull()
       .references(() => vehicles.id),
@@ -61,8 +66,14 @@ export const trips = pgTable(
     uniqueIndex("trips_one_dispatched_driver")
       .on(table.driverId)
       .where(sql`${table.status} = 'dispatched' and ${table.deletedAt} is null`),
+    index("trips_source_location_id_idx").on(table.sourceLocationId),
+    index("trips_destination_location_id_idx").on(table.destinationLocationId),
     check("trips_cargo_weight_kg_positive", sql`${table.cargoWeightKg} > 0`),
     check("trips_planned_distance_km_positive", sql`${table.plannedDistanceKm} > 0`),
+    check(
+      "trips_source_destination_different",
+      sql`${table.sourceLocationId} <> ${table.destinationLocationId}`,
+    ),
   ],
 );
 

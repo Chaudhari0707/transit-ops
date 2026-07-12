@@ -69,14 +69,16 @@ Required:
 
 ### HTTP status map
 
-| Message pattern           | Code |
-| ------------------------- | ---- |
-| `Unauthorized`            | 401  |
-| `Forbidden`               | 403  |
-| ends with `not found` (i) | 404  |
-| `Conflict`                | 409  |
-| `Too many requests`       | 429  |
-| everything else           | 400  |
+| Message pattern           | Code (Elysia `status()` string) |
+| ------------------------- | ------------------------------- |
+| `Unauthorized`            | `"401"`                         |
+| `Forbidden`               | `"403"`                         |
+| ends with `not found` (i) | `"404"`                         |
+| `Conflict` / `Conflict:…` | `"409"`                         |
+| `Too many requests`       | `"429"`                         |
+| everything else           | `"400"`                         |
+
+Use `errorMessage` + `resolveErrorCode` from `src/lib/api/errors.ts`.
 
 ---
 

@@ -47,12 +47,12 @@ const data = {
     },
     {
       title: "Fleet",
-      url: "#",
+      url: "/dashboard/vehicles",
       icon: <TruckIcon />,
     },
     {
       title: "Drivers",
-      url: "#",
+      url: "/drivers",
       icon: <UsersIcon />,
     },
     {
@@ -76,12 +76,12 @@ const data = {
   documents: [
     {
       name: "Maintenance",
-      url: "#",
+      url: "/maintenance",
       icon: <WrenchIcon />,
     },
     {
       name: "Fuel & Expenses",
-      url: "#",
+      url: "/fuel-expenses",
       icon: <FuelIcon />,
     },
     {

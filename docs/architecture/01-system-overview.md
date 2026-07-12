@@ -37,12 +37,13 @@ Hackathon: **no Settings screen**. Hardcode in app constants:
 2. **Master data** — vehicle types, license categories, expense categories, maintenance types (**no regions**)
 3. **Fleet (Vehicles)** — registry + status
 4. **Drivers** — profiles, license compliance, safety score; trip-completion % derived on the fly (not stored)
-5. **Trips** — free-text source/destination; complete = odometer + fuel_log + expenses + free vehicle/driver
-6. **Maintenance** — open/close; vehicle In Shop; costs roll into operational cost
-7. **Fuel & Expenses** — fuel logs; toll/misc expenses; maintenance **linked in UI** (not double-stored as expense rows)
-8. **Documents** — attachment metadata (ENV upload limits)
-9. **Notifications** — outbox table; cron later
-10. **Dashboard & Analytics** — KPIs; filters vehicle type + status only; CSV export; ROI/revenue **static placeholders**
+5. **Trips** — location FK source/destination (dropdown); complete = odometer + fuel_log + expenses + free vehicle/driver
+6. **Locations** — logistics hubs for trip endpoints; seeded master list; fleet manager can add more
+7. **Maintenance** — open/close; vehicle In Shop; costs roll into operational cost
+8. **Fuel & Expenses** — fuel logs; toll/misc expenses; maintenance **linked in UI** (not double-stored as expense rows)
+9. **Documents** — attachment metadata (ENV upload limits)
+10. **Notifications** — outbox table; cron later
+11. **Dashboard & Analytics** — KPIs; filters vehicle type + status only; CSV export; ROI/revenue **static placeholders**
 
 ## Entity map (logical)
 
@@ -52,7 +53,8 @@ vehicle_types, license_categories, expense_categories, maintenance_types
 vehicles ──FK──► vehicle_types
 drivers  ──FK──► license_categories
 drivers.user_id? ──► user
-trips ──► vehicles, drivers, free-text source/destination, user(created_by)
+locations
+trips ──► vehicles, drivers, locations (source + destination), user(created_by)
 maintenance_logs ──► vehicles, maintenance_types, user
 fuel_logs ──► vehicles, trips?, user
 expenses ──► vehicles, expense_categories, trips?, user   # toll/misc only

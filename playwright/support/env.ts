@@ -1,5 +1,7 @@
 type PlaywrightRuntimeConfig = {
+  adminEmail: string;
   adminPassword?: string;
+  adminRole: string;
   adminUsername: string;
   baseURL: string;
   port: number;
@@ -42,9 +44,11 @@ export function getPlaywrightRuntimeConfig(): PlaywrightRuntimeConfig {
   const parsedBaseUrl = new URL(baseURL);
 
   return {
+    adminEmail: requireEnvValue("PLAYWRIGHT_ADMIN_EMAIL", "AUTH_ADMIN_EMAIL"),
     adminUsername: requireEnvValue("PLAYWRIGHT_ADMIN_USERNAME", "AUTH_ADMIN_USERNAME"),
     adminPassword:
       getEnvValue("PLAYWRIGHT_ADMIN_PASSWORD") ?? getEnvValue("AUTH_ADMIN_PASSWORD") ?? undefined,
+    adminRole: getEnvValue("PLAYWRIGHT_ADMIN_ROLE") ?? "fleet_manager",
     baseURL: parsedBaseUrl.toString().replace(/\/$/, ""),
     port: Number(parsedBaseUrl.port),
   };

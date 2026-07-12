@@ -1,8 +1,25 @@
 import { Elysia } from "elysia";
 
-import { authModule } from "@/modules";
+import {
+  driversModule,
+  fuelExpensesModule,
+  locationsModule,
+  maintenanceModule,
+  tripsModule,
+  vehiclesModule,
+} from "@/modules";
 
-export const app = new Elysia({ prefix: "/api" }).use(authModule);
+/**
+ * Domain API surface. Sign-in/session is owned by monish Better Auth at `/api/auth/*`.
+ */
+export const app = new Elysia({ prefix: "/api" })
+  .get("/health", () => ({ ok: true }))
+  .use(vehiclesModule)
+  .use(driversModule)
+  .use(locationsModule)
+  .use(tripsModule)
+  .use(maintenanceModule)
+  .use(fuelExpensesModule);
 
 export const GET = app.handle;
 export const POST = app.handle;
