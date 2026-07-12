@@ -1,18 +1,15 @@
 import { getDb } from "@/lib/db/client";
+import { isSignInInputEmpty, normalizeIdentifier } from "@/modules/auth/_lib/identifiers";
 import type { AuthModel } from "@/modules/auth/_types/auth";
-
-function normalizeIdentifier(identifier: string) {
-  return identifier.trim().toLowerCase();
-}
 
 export abstract class Auth {
   static async signIn({ username, password }: AuthModel["signInBody"]) {
-    const identifier = normalizeIdentifier(username);
-    const normalizedPassword = password.trim();
-
-    if (identifier.length === 0 || normalizedPassword.length === 0) {
+    if (isSignInInputEmpty(username, password)) {
       return null;
     }
+
+    const identifier = normalizeIdentifier(username);
+    const normalizedPassword = password.trim();
 
     const adminUser = await getDb().query.adminUsers.findFirst({
       where: (table, { eq, or }) => or(eq(table.username, identifier), eq(table.email, identifier)),

@@ -7,7 +7,7 @@
     "auth:hash": "bun scripts/generate-password-hash.ts",
     "auth:register-admin": "bun scripts/register-admin.ts",
     "auth:remove-admin": "bun scripts/remove-admin.ts",
-    "build": "next build",
+    "build": "bun --bun next build",
     "build:rules": "bun run lint-rules/build-rules.ts",
     "check": "bun run lint && bun run typecheck && bun run test:unit && bun run file-size && bun run build",
     "check:fast": "bun run typecheck && bun run test:unit && bun run file-size",
@@ -25,15 +25,18 @@
     "db:status": "bun scripts/db-status.ts",
     "db:studio": "drizzle-kit studio",
     "db:verify": "bun scripts/db-verify-schema.ts",
-    "dev": "next dev",
+    "dev": "bun --bun next dev",
     "file-size": "bun scripts/check-file-size.ts",
     "fmt": "bunx oxfmt",
     "fmt:check": "bunx oxfmt --check",
     "lint": "bun run build:rules && bunx oxlint",
     "lint:fix": "bun run build:rules && bunx oxlint --fix --fix-suggestions",
     "prepare": "husky",
-    "start": "next start",
-    "test:unit": "bun test --isolate --pass-with-no-tests test/",
+    "start": "bun --bun next start",
+    "test:e2e": "bun --bun playwright test",
+    "test:e2e:headed": "bun --bun playwright test --headed",
+    "test:e2e:install": "bun --bun playwright install chromium",
+    "test:unit": "bun test --isolate test/",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -48,8 +51,10 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
     "@types/bun": "^1.3.14",
+    "@types/node": "26.1.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
@@ -72,6 +77,12 @@
       "bunx oxlint --fix --fix-suggestions"
     ],
     "scripts/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "bunx oxlint --fix --fix-suggestions"
+    ],
+    "playwright/**/*.ts": [
+      "bunx oxlint --fix --fix-suggestions"
+    ],
+    "playwright.config.ts": [
       "bunx oxlint --fix --fix-suggestions"
     ],
     "*.{js,jsx,ts,tsx,mjs,cjs}": [

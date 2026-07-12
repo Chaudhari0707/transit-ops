@@ -1,94 +1,36 @@
-<!-- BEGIN:nextjs-agent-rules -->
+> Non-standard Next.js — read `.agents/nextjs.md` before any Next.js code.
+> Domain rules index → `.agents/index.md`
 
-# This is NOT the Next.js you know
+# Agent Policy
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+## Architecture
 
-<!-- END:nextjs-agent-rules -->
+- **Plug-in-play modules:** major features ship as isolated plug-ins under `src/modules/<domain>/plugins/<feature>/` with a manifest + `index.ts` / `server.ts` public surface. Read `.agents/modular-plugins.md` before any new cross-cutting capability.
+- DRY + reusability are core. Search for existing modules, hooks, utilities, and schemas before creating new ones.
+- `page.tsx` = orchestration only → extract to `_components/*-page-client.tsx`.
+- Form schemas → `_lib/*-schema.ts`. Transforms → `_lib/*-helpers.ts`.
+- Exported types → `_types/` directories (enforced by lint). Do not export types from runtime source files.
+- Route-specific extractions → colocate under `src/app/<route>/_components` and `src/app/<route>/_types`.
+- Arch/API/schema changes → update `docs/` + nearest `AGENTS.md` in the same task.
+- **New APIs (mandatory):** follow `.agents/api-standards.md` — module layout, TypeBox models, error map, auth/ownership, and **failure-first** tests under `test/modules/**`. Never ship happy-path-only API tests.
 
-## Agent Operating Policy (XML)
+## Clarification
 
-```xml
-	<agentPolicy version="1.1">
-	<problemSolving>
-		<complexProblemDecomposition required="true" trigger="complex-task">
-			<trigger>Apply this workflow whenever the task is complex.</trigger>
-			<atomSteps>
-				<step order="1">State the logical component.</step>
-				<step order="2">Validate independence from other atoms; if dependent, explicitly declare dependency.</step>
-				<step order="3">Verify correctness of the atom before proceeding.</step>
-			</atomSteps>
-			<synthesis>After all atoms are validated and verified, synthesize them into the final answer, implementation, or recommendation.</synthesis>
-		</complexProblemDecomposition>
-		<assumptionHandling required="true">
-			<rule>Do not invent missing business rules, workflows, or acceptance criteria.</rule>
-			<rule>If missing information has material impact, clarify first; otherwise state the assumption explicitly.</rule>
-		</assumptionHandling>
-	</problemSolving>
+- Use `askQuestions` when the request is ambiguous, multi-module, or acceptance criteria are unclear.
+- Do not invent missing business rules. State assumptions explicitly when proceeding.
 
-	<architecture>
-		<principles required="true" scope="project">
-			<principle>DRY (Do Not Repeat Yourself)</principle>
-			<principle>Component reusability</principle>
-		</principles>
-		<focus>These principles are core focus areas at project level.</focus>
-		<reuseWorkflow required="true">
-			<step order="1">Search for existing reusable components, hooks, utilities, schemas, or server modules before creating new ones.</step>
-			<step order="2">Extend, compose, or parameterize existing modules when practical.</step>
-			<step order="3">Create new abstractions only when they improve clarity, reuse, or maintainability.</step>
-		</reuseWorkflow>
-		<images required="true">
-			<rule>For SVG sources, add the unoptimized prop to next/image — Next.js auto-applies this when src ends in .svg, but explicit is required for clarity.</rule>
-			<rule>Set width and height to match the SVG's actual aspect ratio. Do not use equal or arbitrary values; mismatched intrinsic dimensions cause a browser aspect-ratio warning.</rule>
-			<rule>Do not use the priority prop — deprecated in Next.js 16. Use loading="eager" for above-fold images instead.</rule>
-			<rule>For light/dark SVG variants, use CSS display toggling (dark:hidden / dark:block). Do not conditionally render with JS.</rule>
-		</images>
-	</architecture>
+## Execution
 
-	<clarificationPolicy>
-		<whenToAskQuestions>
-			<condition>User request is not concrete or is ambiguous.</condition>
-			<condition>Requested functionality can affect multiple areas or modules.</condition>
-			<condition>Office-related workflow requests have broad cross-feature impact.</condition>
-			<condition>Acceptance criteria, business rules, or data flow are materially unclear.</condition>
-		</whenToAskQuestions>
-		<action required="true">Use the askQuestions tool to gather missing details before implementation and proceed confidently after clarification.</action>
-	</clarificationPolicy>
+- Stay scoped. Fix root causes. No speculative refactors.
+- **Tooling:** pure Oxc — `oxfmt` for formatting, `oxlint` for linting. No ESLint or Prettier.
+- **Gates (blocking):** `fmt:check`, `lint` (0 warnings), `typecheck`, `file-size`, `build`.
+- **Pre-commit:** `lint-staged` (oxfmt + oxlint) then `check:fast` (typecheck + test:unit + file-size).
+- No gate bypasses (`oxlint-disable`, rule downgrades, allowlist additions) without explicit user approval.
+- When file-size pressure appears, extract one responsibility at a time. Keep public interfaces stable.
+- Validate touched slice → rerun full gates before concluding.
+- Load `.agents/skills/karpathy-guidelines/SKILL.md` for behavioral discipline on non-trivial work.
+- **E2E:** Playwright specs under `playwright/`. Run `bun run test:e2e` for browser coverage. See `docs/testing.md`.
 
-	<executionPolicy>
-		<scopeControl required="true">
-			<rule>Do not drift into unrelated refactors or speculative changes.</rule>
-			<rule>Fix root causes when practical instead of applying surface-level patches.</rule>
-			<rule>Keep changes minimal, targeted, and consistent with existing project patterns.</rule>
-		</scopeControl>
-		<qualityGates required="true">
-			<rule>Pre-commit quality gates are blocking: staged-file formatting/lint fixes, repo lint with zero warnings, strict typecheck, strict file-size audit, and build must all pass before commit.</rule>
-			<rule>Do not bypass structural quality gates with eslint-disable comments, rule downgrades, or new broad exemptions unless the user explicitly approves a justified exception.</rule>
-		</qualityGates>
-		<warningResolution required="true">
-			<rule>When file-size, max-lines, or max-lines-per-function issues appear, preserve behavior by extracting one responsibility at a time into smaller modules, hooks, helpers, or leaf components instead of rewriting the flow wholesale.</rule>
-			<rule>Keep existing public props, return shapes, side effects, and data flow stable while decomposing. Move render branches, derived state, loaders, action factories, and form sections out of large files before changing logic.</rule>
-			<rule>For dashboard route work, keep extractions colocated under src/app/dashboard/_components and src/app/dashboard/_types unless the abstraction is genuinely reused outside the route.</rule>
-			<rule>For type-management issues, tighten or reuse existing shared types and move repeated interfaces into dedicated types modules. Do not add duplicate ad-hoc type definitions to silence lint pressure.</rule>
-			<rule>After each substantive extraction, validate the touched slice first, then rerun the broader lint, typecheck, and build gates before concluding the task.</rule>
-		</warningResolution>
-		<validation required="true">
-			<step order="1">Inspect existing code and patterns before editing.</step>
-			<step order="2">Validate impacted areas after implementation using relevant checks, tests, or direct reasoning.</step>
-			<step order="3">If validation cannot be executed, state the limitation explicitly.</step>
-		</validation>
-	</executionPolicy>
+## Images
 
-	<instructionPriority>
-		<priority level="1">If the request is ambiguous, under-specified, multi-module, or office-related with broad impact, use askQuestions before implementation.</priority>
-		<priority level="2">Load and follow the most relevant skill guidance before implementation when a domain-specific skill applies.</priority>
-		<priority level="3">If the task is complex, apply atomic problem decomposition before solving.</priority>
-		<priority level="4">At project level, preserve DRY and component reusability as core architecture constraints.</priority>
-		<priority level="5">Validate the impacted area before concluding the task.</priority>
-	</instructionPriority>
-
-	<conflictResolution>
-		<rule>When multiple rules apply, resolve them in this order: clarify first, load the relevant skill, decompose if complex, implement within architecture constraints, then validate.</rule>
-	</conflictResolution>
-	</agentPolicy>
-```
+See `.agents/images.md` for `next/image` and SVG rules.

@@ -13,6 +13,8 @@ export default defineConfig({
     ".agents/**/*",
     ".claude/**/*",
     "lint-rules/dist/**/*",
+    "playwright-report/**/*",
+    "test-results/**/*",
   ],
   jsPlugins: ["./lint-rules/dist/index.js"],
   rules: {
