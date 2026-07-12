@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   formatVehicleOptionLabel,
+  resolvedSelectValue,
   sortVehiclesByCapacity,
 } from "@/app/trips/_lib/trip-form-helpers";
 
@@ -43,5 +44,21 @@ describe("trip form vehicle helpers", () => {
     ]);
 
     expect(sorted.map((vehicle) => vehicle.id)).toEqual(["small", "large"]);
+  });
+});
+
+describe("resolvedSelectValue", () => {
+  test("returns null while label is unresolved so UUID is never shown", () => {
+    expect(resolvedSelectValue("a1b2c3d4-uuid", undefined)).toBeNull();
+    expect(resolvedSelectValue("a1b2c3d4-uuid", null)).toBeNull();
+    expect(resolvedSelectValue("a1b2c3d4-uuid", "")).toBeNull();
+  });
+
+  test("returns null for empty id", () => {
+    expect(resolvedSelectValue("", "Mehsana Factory")).toBeNull();
+  });
+
+  test("returns id once label is resolved", () => {
+    expect(resolvedSelectValue("loc-1", "Mehsana Factory")).toBe("loc-1");
   });
 });

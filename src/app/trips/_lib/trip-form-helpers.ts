@@ -58,6 +58,21 @@ export function formatVehicleOptionLabel(vehicle: AssignableVehicleRecord): stri
   return `${vehicle.registrationNumber} · ${vehicle.nameModel} · ${formatVehicleCapacityKg(vehicle.maxLoadCapacityKg)} max`;
 }
 
+/**
+ * Base UI Select falls back to the raw value (UUID) when items are still loading.
+ * Only bind the select value once the matching option label is resolved.
+ */
+export function resolvedSelectValue(
+  id: string,
+  resolvedLabel: string | null | undefined,
+): string | null {
+  if (!id || !resolvedLabel) {
+    return null;
+  }
+
+  return id;
+}
+
 export function sortVehiclesByCapacity(
   vehicles: AssignableVehicleRecord[],
 ): AssignableVehicleRecord[] {

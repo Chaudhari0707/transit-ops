@@ -130,43 +130,45 @@ export function TripFormDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,48rem)] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[min(90vh,48rem)] flex-col gap-4 overflow-hidden p-0 sm:max-w-2xl">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </DialogHeader>
 
-        <TripLifecycleSteps activeStatus={lifecycleStatus} />
+          <TripLifecycleSteps activeStatus={lifecycleStatus} />
 
-        <TripCreateForm
-          key={session.kind === "trip" ? session.tripId : "new"}
-          tripId={activeTrip?.id ?? null}
-          initialValues={initialValues}
-          lifecycleStatus={lifecycleStatus}
-          readOnly={!canWrite || (activeTrip ? activeTrip.status !== "draft" : false)}
-          optionsLoading={optionsLoading}
-          locations={locations}
-          vehicles={vehicleOptions}
-          drivers={driverOptions}
-          onClose={() => onOpenChange(false)}
-          onCreated={onRefresh}
-          onDispatched={onRefresh}
-          onUpdated={onRefresh}
-          onRequestComplete={
-            canWrite && activeTrip && onRequestComplete
-              ? () => onRequestComplete(activeTrip)
-              : undefined
-          }
-          onRequestCancel={
-            canWrite &&
-            activeTrip &&
-            (activeTrip.status === "draft" || activeTrip.status === "dispatched") &&
-            onRequestCancel
-              ? () => onRequestCancel(activeTrip.id)
-              : undefined
-          }
-          onError={onError}
-        />
+          <TripCreateForm
+            key={session.kind === "trip" ? session.tripId : "new"}
+            tripId={activeTrip?.id ?? null}
+            initialValues={initialValues}
+            lifecycleStatus={lifecycleStatus}
+            readOnly={!canWrite || (activeTrip ? activeTrip.status !== "draft" : false)}
+            optionsLoading={optionsLoading}
+            locations={locations}
+            vehicles={vehicleOptions}
+            drivers={driverOptions}
+            onClose={() => onOpenChange(false)}
+            onCreated={onRefresh}
+            onDispatched={onRefresh}
+            onUpdated={onRefresh}
+            onRequestComplete={
+              canWrite && activeTrip && onRequestComplete
+                ? () => onRequestComplete(activeTrip)
+                : undefined
+            }
+            onRequestCancel={
+              canWrite &&
+              activeTrip &&
+              (activeTrip.status === "draft" || activeTrip.status === "dispatched") &&
+              onRequestCancel
+                ? () => onRequestCancel(activeTrip.id)
+                : undefined
+            }
+            onError={onError}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

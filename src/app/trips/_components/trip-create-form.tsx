@@ -8,6 +8,7 @@ import {
   formatVehicleCapacityKg,
   formatVehicleOptionLabel,
   getCargoCapacityAlert,
+  resolvedSelectValue,
   sortVehiclesByCapacity,
 } from "@/app/trips/_lib/trip-form-helpers";
 import { createTripSchema } from "@/app/trips/_lib/trip-form-schema";
@@ -101,6 +102,14 @@ export function TripCreateForm({
   );
   const selectedVehicle = vehicleOptions.find((vehicle) => vehicle.id === values.vehicleId);
   const selectedDriver = drivers.find((driver) => driver.id === values.driverId);
+  const sourceLabel = selectedSource?.name;
+  const destinationLabel = selectedDestination?.name;
+  const vehicleLabel = selectedVehicle ? formatVehicleOptionLabel(selectedVehicle) : undefined;
+  const driverLabel = selectedDriver?.fullName;
+  const sourceValue = resolvedSelectValue(values.sourceLocationId, sourceLabel);
+  const destinationValue = resolvedSelectValue(values.destinationLocationId, destinationLabel);
+  const vehicleValue = resolvedSelectValue(values.vehicleId, vehicleLabel);
+  const driverValue = resolvedSelectValue(values.driverId, driverLabel);
   const locationItems = React.useMemo(
     () => locations.map((location) => ({ label: location.name, value: location.id })),
     [locations],
@@ -221,7 +230,7 @@ export function TripCreateForm({
           <FieldLabel htmlFor="trip-source">Source</FieldLabel>
           <Select
             items={locationItems}
-            value={values.sourceLocationId || null}
+            value={sourceValue}
             onValueChange={(value) => updateField("sourceLocationId", value ?? "")}
             disabled={selectsDisabled}
           >
@@ -230,8 +239,8 @@ export function TripCreateForm({
               className="w-full"
               aria-invalid={!!fieldErrors.sourceLocationId}
             >
-              <SelectValue placeholder={optionsLoading ? "Loading locations…" : "Select source"}>
-                {selectedSource?.name}
+              <SelectValue placeholder={optionsLoading ? "Loading…" : "Select source"}>
+                {sourceLabel}
               </SelectValue>
               {optionsLoading ? (
                 <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
@@ -260,7 +269,7 @@ export function TripCreateForm({
           <FieldLabel htmlFor="trip-destination">Destination</FieldLabel>
           <Select
             items={locationItems}
-            value={values.destinationLocationId || null}
+            value={destinationValue}
             onValueChange={(value) => updateField("destinationLocationId", value ?? "")}
             disabled={selectsDisabled}
           >
@@ -269,10 +278,8 @@ export function TripCreateForm({
               className="w-full"
               aria-invalid={!!fieldErrors.destinationLocationId}
             >
-              <SelectValue
-                placeholder={optionsLoading ? "Loading locations…" : "Select destination"}
-              >
-                {selectedDestination?.name}
+              <SelectValue placeholder={optionsLoading ? "Loading…" : "Select destination"}>
+                {destinationLabel}
               </SelectValue>
               {optionsLoading ? (
                 <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
@@ -301,7 +308,7 @@ export function TripCreateForm({
           <FieldLabel htmlFor="trip-vehicle">Vehicle (available only)</FieldLabel>
           <Select
             items={vehicleItems}
-            value={values.vehicleId || null}
+            value={vehicleValue}
             onValueChange={(value) => updateField("vehicleId", value ?? "")}
             disabled={selectsDisabled}
           >
@@ -310,10 +317,8 @@ export function TripCreateForm({
               className="w-full"
               aria-invalid={!!fieldErrors.vehicleId}
             >
-              <SelectValue
-                placeholder={optionsLoading ? "Loading vehicles…" : "Select vehicle by capacity"}
-              >
-                {selectedVehicle ? formatVehicleOptionLabel(selectedVehicle) : null}
+              <SelectValue placeholder={optionsLoading ? "Loading…" : "Select vehicle by capacity"}>
+                {vehicleLabel}
               </SelectValue>
               {optionsLoading ? (
                 <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
@@ -347,7 +352,7 @@ export function TripCreateForm({
           <FieldLabel htmlFor="trip-driver">Driver (available only)</FieldLabel>
           <Select
             items={driverItems}
-            value={values.driverId || null}
+            value={driverValue}
             onValueChange={(value) => updateField("driverId", value ?? "")}
             disabled={selectsDisabled}
           >
@@ -356,8 +361,8 @@ export function TripCreateForm({
               className="w-full"
               aria-invalid={!!fieldErrors.driverId}
             >
-              <SelectValue placeholder={optionsLoading ? "Loading drivers…" : "Select driver"}>
-                {selectedDriver?.fullName}
+              <SelectValue placeholder={optionsLoading ? "Loading…" : "Select driver"}>
+                {driverLabel}
               </SelectValue>
               {optionsLoading ? (
                 <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
