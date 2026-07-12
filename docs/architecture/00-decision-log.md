@@ -58,6 +58,7 @@ Append-only style. Do not rewrite history; supersede with a new ADR row.
 | ADR-051 | 2026-07-12 | Login lockout            | **Better Auth rate limit** on `/sign-in/email`: max **5** failures per window                               | Mockup: locked after 5 failed attempts                                              |
 | ADR-052 | 2026-07-12 | Dashboard filters        | **Vehicle type + status only** (no region)                                                                  | Excalidraw had region; cancelled with ADR-043                                       |
 | ADR-054 | 2026-07-12 | UI stack                 | **shadcn only**; **blocks first** (`login-02`, `dashboard-01`); else components; **MCP first**              | No custom UI libs; see `08-ui-shadcn.md`                                            |
+| ADR-055 | 2026-07-12 | Trip locations           | **`locations` table** replaces free-text source/destination; FK on trips; source ≠ destination              | Dispatcher dropdowns; fleet manager can add locations                               |
 
 ## Scaffold note (migration intent)
 

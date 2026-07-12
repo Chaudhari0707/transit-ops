@@ -1,6 +1,8 @@
 import { Config, Console, Effect } from "effect";
 import postgres from "postgres";
 
+import type { SeedCredentialUser } from "./_types/seed-user";
+
 const PASSWORD_HASH_OPTIONS = {
   algorithm: "argon2id",
   memoryCost: 65536,
@@ -167,45 +169,123 @@ export function withDatabase<A, E>(
   );
 }
 
+/**
+ * Upsert Better Auth `user` + credential `account` for any app role.
+ * Transitional until Better Auth seed helpers own bootstrap accounts.
+ */
+export function upsertCredentialUser(
+  sql: ReturnType<typeof postgres>,
+  seedUser: SeedCredentialUser,
+) {
+  return Effect.gen(function* () {
+    const passwordHash = yield* hashPassword(seedUser.password);
+    const userId = crypto.randomUUID();
+    const accountId = crypto.randomUUID();
+    const username =
+      seedUser.username ?? normalizeUsername(seedUser.email.split("@")[0] ?? seedUser.role);
+
+    const [result] = yield* Effect.tryPromise({
+      try: () =>
+        sql.begin(async (tx) => {
+          const [upsertedUser] = await tx<{ id: string; email: string; name: string }[]>`
+            INSERT INTO "user" (
+              id, name, email, email_verified, role, phone_number, is_active, created_at, updated_at
+            )
+            VALUES (
+              ${userId},
+              ${seedUser.fullName},
+              ${seedUser.email},
+              TRUE,
+              ${seedUser.role},
+              ${seedUser.phoneNumber},
+              TRUE,
+              NOW(),
+              NOW()
+            )
+            ON CONFLICT (email) DO UPDATE
+              SET
+                name = EXCLUDED.name,
+                role = EXCLUDED.role,
+                phone_number = EXCLUDED.phone_number,
+                is_active = TRUE,
+                deleted_at = NULL,
+                updated_at = NOW()
+            RETURNING id, email, name
+          `;
+
+          if (!upsertedUser) {
+            throw new Error(`User upsert did not return a record for ${seedUser.email}.`);
+          }
+
+          const [existingAccount] = await tx<{ id: string }[]>`
+            SELECT id
+            FROM account
+            WHERE user_id = ${upsertedUser.id}
+              AND provider_id = 'credential'
+            LIMIT 1
+          `;
+
+          if (existingAccount) {
+            await tx`
+              UPDATE account
+              SET
+                password = ${passwordHash},
+                account_id = ${upsertedUser.id},
+                updated_at = NOW()
+              WHERE id = ${existingAccount.id}
+            `;
+          } else {
+            await tx`
+              INSERT INTO account (
+                id, user_id, account_id, provider_id, password, created_at, updated_at
+              )
+              VALUES (
+                ${accountId},
+                ${upsertedUser.id},
+                ${upsertedUser.id},
+                'credential',
+                ${passwordHash},
+                NOW(),
+                NOW()
+              )
+            `;
+          }
+
+          return [
+            {
+              id: upsertedUser.id,
+              email: upsertedUser.email,
+              role: seedUser.role,
+              username,
+            },
+          ];
+        }),
+      catch: (error) =>
+        new Error(getErrorMessage(error, `Failed to upsert user ${seedUser.email}.`)),
+    });
+
+    if (!result) {
+      yield* Effect.fail(new Error(`User upsert did not return a record for ${seedUser.email}.`));
+    }
+
+    return result;
+  });
+}
+
+/** Upsert fleet_manager bootstrap account (register-admin / seed admin). */
 export function upsertAdminUser(
   sql: ReturnType<typeof postgres>,
   adminUser: Awaited<
     typeof seedAdminUser extends Effect.Effect<infer A, unknown, unknown> ? Promise<A> : never
   >,
 ) {
-  return Effect.gen(function* () {
-    const passwordHash = yield* hashPassword(adminUser.password);
-
-    const [result] = yield* Effect.tryPromise({
-      try: () =>
-        sql<{ id: string; email: string; username: string }[]>`
-          INSERT INTO admin_users (username, full_name, email, phone_number, password_hash, is_active)
-          VALUES (
-            ${adminUser.username},
-            ${adminUser.fullName},
-            ${adminUser.email},
-            ${adminUser.phoneNumber},
-            ${passwordHash},
-            TRUE
-          )
-          ON CONFLICT (email) DO UPDATE
-            SET
-              username = EXCLUDED.username,
-              full_name = EXCLUDED.full_name,
-              phone_number = EXCLUDED.phone_number,
-              password_hash = EXCLUDED.password_hash,
-              is_active = TRUE,
-              updated_at = NOW()
-          RETURNING id, email, username
-        `,
-      catch: (error) => new Error(getErrorMessage(error, "Failed to upsert the admin user.")),
-    });
-
-    if (!result) {
-      yield* Effect.fail(new Error("Admin upsert did not return a record."));
-    }
-
-    return result;
+  return upsertCredentialUser(sql, {
+    email: adminUser.email,
+    fullName: adminUser.fullName,
+    password: adminUser.password,
+    phoneNumber: adminUser.phoneNumber,
+    role: "fleet_manager",
+    username: adminUser.username,
   });
 }
 
@@ -213,7 +293,7 @@ export function deleteAdminUser(sql: ReturnType<typeof postgres>, adminEmail: st
   return Effect.tryPromise({
     try: () =>
       sql<{ id: string; email: string }[]>`
-        DELETE FROM admin_users
+        DELETE FROM "user"
         WHERE email = ${adminEmail}
         RETURNING id, email
       `,

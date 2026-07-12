@@ -50,3 +50,8 @@ next-env.d.ts
 
 # oxlint custom rules build output
 /lint-rules/dist/
+
+# local curl / session artifacts
+body.json
+cookies.txt
+

@@ -6,7 +6,7 @@ Aligned with Excalidraw mockup screens 0–8.
 
 1. **Fleet Manager** registers vehicle `Van-05`, max capacity 500 kg, status `available`.
 2. **Fleet Manager** (or Safety) registers driver `Alex` with valid license, status `available`.
-3. **Dispatcher** creates trip: free-text source `Gandhinagar Depot`, destination `Ahmedabad Hub`, vehicle, driver, cargo 450 kg, planned distance. Status `draft`.
+3. **Dispatcher** creates trip: source location `Gandhinagar Depot`, destination `Ahmedabad Hub` (from `GET /api/locations`), vehicle + driver from assignable pools (`GET /api/trips/assignables/vehicles`, `GET /api/trips/assignables/drivers`), cargo 450 kg, planned distance. Status `draft`. Source ≠ destination enforced.
 4. **Dispatcher** dispatches: system checks 450 ≤ 500, license valid, both available → trip `dispatched`, vehicle+driver `on_trip`, snapshot `start_odometer_km`.
 5. **Dispatcher** completes (see Flow H) → odometer + fuel_log + expenses logged → trip `completed`, vehicle+driver Available.
 6. **Fleet Manager** opens maintenance (oil change) → vehicle `in_shop`, hidden from dispatch.
@@ -79,7 +79,7 @@ All of this happens in **one complete action** (one API transaction). Expenses a
 
 ### Regions
 
-Ignored for now. **Source and destination = free text only.**
+Ignored for now. **Source and destination = `locations` table FKs** (ADR-055); must differ.
 
 ## Product UI flow reference
 
