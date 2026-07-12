@@ -1,8 +1,8 @@
 import { Elysia } from "elysia";
 
-import { authModule } from "@/modules";
+import { authModule, vehiclesModule } from "@/modules";
 
-export const app = new Elysia({ prefix: "/api" }).use(authModule);
+export const app = new Elysia({ prefix: "/api" }).use(authModule).use(vehiclesModule);
 
 export const GET = app.handle;
 export const POST = app.handle;

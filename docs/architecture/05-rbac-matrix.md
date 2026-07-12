@@ -62,3 +62,14 @@ Mockup login access notes (aligned):
 1. Mutating endpoints check role server-side.
 2. 401 unauthenticated / 403 unauthorized / 429 rate limit.
 3. Hide nav for modules with **—**.
+
+### Vehicles registry API (`/api/vehicles`, ODO-22) + UI (`/dashboard/vehicles`, ODO-23)
+
+| Role | Access |
+| ---- | ------ |
+| `fleet_manager` | list/get/create/update/soft-delete + full write UI |
+| `dispatcher` | list/get + view UI |
+| `financial_analyst` | list/get + view UI |
+| `safety_officer` | none (403 / page denied) |
+
+Status writes via registry: **`retired` only**. `on_trip` / `in_shop` are set by trip/maintenance modules. Retire and soft-delete blocked while `on_trip`.
