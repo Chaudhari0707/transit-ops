@@ -47,7 +47,7 @@ const data = {
     },
     {
       title: "Fleet",
-      url: "#",
+      url: "/dashboard/vehicles",
       icon: <TruckIcon />,
     },
     {

@@ -13,3 +13,7 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   safety_officer: "Safety Officer",
   financial_analyst: "Financial Analyst",
 };
+
+export function isUserRole(value: unknown): value is UserRole {
+  return typeof value === "string" && USER_ROLES.includes(value as UserRole);
+}
