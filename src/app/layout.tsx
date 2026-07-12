@@ -1,19 +1,23 @@
+// For adding custom fonts with other frameworks, see:
+// https://tailwindcss.com/docs/font-family
 import "@/app/globals.css";
 
 import type { Metadata } from "next";
-import { Anton, Manrope } from "next/font/google";
+import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 
-const anton = Anton({
-  variable: "--font-anton",
-  weight: "400",
+const fontSans = Inter({
   subsets: ["latin"],
-  display: "swap",
+  variable: "--font-sans",
 });
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+const fontSerif = Source_Serif_4({
   subsets: ["latin"],
-  display: "swap",
+  variable: "--font-serif",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -27,8 +31,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${anton.variable} ${manrope.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html lang="en">
+      <body
+        className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
