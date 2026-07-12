@@ -9,10 +9,11 @@ const PASSWORD_HASH_OPTIONS = {
   timeCost: 3,
 } as const;
 
+/** Dev/demo bootstrap defaults — documented in README. Not for production. */
 const DEFAULT_ADMIN = {
   email: "admin@example.com",
   fullName: "Project Admin",
-  password: "ChangeMe123!",
+  password: "password",
   phoneNumber: "0000000000",
   username: "admin",
 } as const;
@@ -217,39 +218,28 @@ export function upsertCredentialUser(
             throw new Error(`User upsert did not return a record for ${seedUser.email}.`);
           }
 
-          const [existingAccount] = await tx<{ id: string }[]>`
-            SELECT id
-            FROM account
+          // Better Auth expects a single credential account per user. Prior seeds
+          // could leave duplicates; wipe and re-insert so password updates stick.
+          await tx`
+            DELETE FROM account
             WHERE user_id = ${upsertedUser.id}
               AND provider_id = 'credential'
-            LIMIT 1
           `;
 
-          if (existingAccount) {
-            await tx`
-              UPDATE account
-              SET
-                password = ${passwordHash},
-                account_id = ${upsertedUser.id},
-                updated_at = NOW()
-              WHERE id = ${existingAccount.id}
-            `;
-          } else {
-            await tx`
-              INSERT INTO account (
-                id, user_id, account_id, provider_id, password, created_at, updated_at
-              )
-              VALUES (
-                ${accountId},
-                ${upsertedUser.id},
-                ${upsertedUser.id},
-                'credential',
-                ${passwordHash},
-                NOW(),
-                NOW()
-              )
-            `;
-          }
+          await tx`
+            INSERT INTO account (
+              id, user_id, account_id, provider_id, password, created_at, updated_at
+            )
+            VALUES (
+              ${accountId},
+              ${upsertedUser.id},
+              ${upsertedUser.id},
+              'credential',
+              ${passwordHash},
+              NOW(),
+              NOW()
+            )
+          `;
 
           return [
             {
