@@ -583,6 +583,20 @@ const program = Effect.gen(function* () {
       yield* Console.log(`      Role     : safety_officer`);
       yield* Console.log(`      Record ID: ${safety.id}`);
 
+      const dispatcher = yield* upsertCredentialUser(sql, {
+        email: "dispatcher@example.com",
+        fullName: "Demo Dispatcher",
+        password: adminUser.password,
+        phoneNumber: "9333333333",
+        role: "dispatcher",
+        username: "dispatcher",
+      });
+      yield* Console.log("\n✅  Dispatcher user seeded:");
+      yield* Console.log(`      Email    : dispatcher@example.com`);
+      yield* Console.log(`      Password : ${adminUser.password}`);
+      yield* Console.log(`      Role     : dispatcher`);
+      yield* Console.log(`      Record ID: ${dispatcher.id}`);
+
       yield* Console.log("\n📍  Location master data:");
       for (const location of LOCATION_SEEDS) {
         yield* Effect.tryPromise({
@@ -614,7 +628,7 @@ const program = Effect.gen(function* () {
   );
 
   yield* Console.log(
-    `\n✅  Seed complete — masters, users (FM/FA/Safety), fleet (${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers), maintenance, fuel & expenses.\n`,
+    `\n✅  Seed complete — masters, users (FM/FA/Safety/Dispatcher), ${LOCATION_SEEDS.length} locations, fleet (${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers), maintenance, fuel & expenses.\n`,
   );
 });
 

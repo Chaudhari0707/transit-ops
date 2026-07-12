@@ -131,20 +131,10 @@ test.describe("Drivers API (authenticated)", () => {
 
 test.describe("Drivers UI (authenticated)", () => {
   test("drivers page shows seed data and create form", async ({ page }) => {
-    const cfg = runtime();
     await gotoRoute(page, "/drivers");
 
-    // Session from setup should skip sign-in; if not, use on-page form.
-    const signInButton = page.getByRole("button", { name: /^sign in$/i });
-    if (await signInButton.isVisible().catch(() => false)) {
-      await page.getByLabel(/email/i).fill(cfg.adminEmail);
-      await page.getByLabel(/password/i).fill(cfg.adminPassword ?? "ChangeMe123!");
-      await signInButton.click();
-      await expect(page.getByRole("heading", { name: /drivers/i }).first()).toBeVisible({
-        timeout: 15_000,
-      });
-    }
-
+    // Storage state from auth.setup must keep us past monish /sign-in proxy.
+    await expect(page).not.toHaveURL(/\/sign-in/);
     await expect(page.getByRole("heading", { name: "Drivers" }).first()).toBeVisible({
       timeout: 15_000,
     });
@@ -159,17 +149,8 @@ test.describe("Drivers UI (authenticated)", () => {
   });
 
   test("UI create driver appears in table", async ({ page }) => {
-    const cfg = runtime();
     await gotoRoute(page, "/drivers");
-
-    const signInButton = page.getByRole("button", { name: /^sign in$/i });
-    if (await signInButton.isVisible().catch(() => false)) {
-      await page.getByLabel(/email/i).fill(cfg.adminEmail);
-      await page.getByLabel(/password/i).fill(cfg.adminPassword ?? "ChangeMe123!");
-      await signInButton.click();
-      await page.waitForTimeout(1000);
-    }
-
+    await expect(page).not.toHaveURL(/\/sign-in/);
     await expect(page.getByLabel(/full name/i)).toBeVisible({ timeout: 15_000 });
 
     const suffix = Date.now().toString().slice(-8);
