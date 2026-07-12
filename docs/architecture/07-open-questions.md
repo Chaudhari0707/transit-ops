@@ -2,21 +2,20 @@
 
 ## Still open / later tasks
 
-| ID    | Topic                      | Status         | Notes                                                        |
-| ----- | -------------------------- | -------------- | ------------------------------------------------------------ |
-| OQ-08 | Notification cron / worker | **Later task** | `notification_outbox` table remains; schedule/worker not v1. |
+_None for v1 core + bonus notifications/dark mode._
 
 ## Resolved archive
 
-| ID                     | Resolution                                                                                       | ADR     |
-| ---------------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| OQ-01 Real revenue/ROI | **`revenue_logs`** on trip complete; formula planned_km × capacity × rate; reports use real sums | ADR-056 |
-| OQ-02 Active vehicles  | Non-retired count                                                                                | ADR-035 |
-| OQ-03 Auth/sessions    | Better Auth + DB session                                                                         | ADR-036 |
-| OQ-04 Operational cost | **Superseded:** now **fuel + maintenance** (was briefly fuel-only)                               | ADR-044 |
-| OQ-05 Driver edit      | FM + Safety full edit                                                                            | ADR-038 |
-| OQ-06 Region filter    | **Regions cancelled entirely** — free-text trip ends, no filter                                  | ADR-043 |
-| OQ-07 Uploads          | ENV max size + MIME; default 5MB / all types                                                     | ADR-040 |
+| ID                      | Resolution                                                                                       | ADR     |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ------- |
+| OQ-01 Real revenue/ROI  | **`revenue_logs`** on trip complete; formula planned_km × capacity × rate; reports use real sums | ADR-056 |
+| OQ-02 Active vehicles   | Non-retired count                                                                                | ADR-035 |
+| OQ-03 Auth/sessions     | Better Auth + DB session                                                                         | ADR-036 |
+| OQ-04 Operational cost  | **Superseded:** now **fuel + maintenance** (was briefly fuel-only)                               | ADR-044 |
+| OQ-05 Driver edit       | FM + Safety full edit                                                                            | ADR-038 |
+| OQ-06 Region filter     | **Regions cancelled entirely** — free-text trip ends, no filter                                  | ADR-043 |
+| OQ-07 Uploads           | ENV max size + MIME; default 5MB / all types                                                     | ADR-040 |
+| OQ-08 Notification cron | Env-driven schedule + `notification_outbox` enqueue/drain scripts (`bun run notifications:*`)    | ADR-059 |
 
 ## Excalidraw-driven locks (2026-07-12 pass)
 

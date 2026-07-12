@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 
 import {
   emptyVehicleFormDefaults,
   vehicleToFormDefaults,
+  vehicleTypeSelectItems,
 } from "@/app/dashboard/vehicles/_lib/vehicle-helpers";
 import { vehicleFormSchema } from "@/app/dashboard/vehicles/_lib/vehicle-schema";
 import type {
@@ -54,20 +56,30 @@ export function VehicleFormSheet({
   onSubmit,
 }: VehicleFormSheetProps) {
   const defaultTypeId = vehicleTypes[0]?.id ?? "";
+  const typeItems = vehicleTypeSelectItems(vehicleTypes);
   const form = useForm<VehicleFormValues, unknown, VehicleFormParsed>({
     resolver: zodResolver(vehicleFormSchema),
     mode: "onChange",
     reValidateMode: "onChange",
     shouldFocusError: true,
-    values: vehicle ? vehicleToFormDefaults(vehicle) : emptyVehicleFormDefaults(defaultTypeId),
+    defaultValues: emptyVehicleFormDefaults(defaultTypeId),
   });
 
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    reset,
+    formState: { errors, isSubmitting },
   } = form;
+
+  useEffect(() => {
+    if (!open) return;
+
+    reset(vehicle ? vehicleToFormDefaults(vehicle) : emptyVehicleFormDefaults(defaultTypeId));
+  }, [open, vehicle, defaultTypeId, reset]);
+
+  const saveDisabled = submitting || isSubmitting;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -117,18 +129,23 @@ export function VehicleFormSheet({
               name="vehicleTypeId"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value || null}
+                  items={typeItems}
                   onValueChange={(value) => {
                     if (value) field.onChange(value);
                   }}
                 >
-                  <SelectTrigger id="vehicleTypeId" aria-invalid={Boolean(errors.vehicleTypeId)}>
+                  <SelectTrigger
+                    id="vehicleTypeId"
+                    className="w-full"
+                    aria-invalid={Boolean(errors.vehicleTypeId)}
+                  >
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vehicleTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name} ({type.code})
+                    {typeItems.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -194,8 +211,12 @@ export function VehicleFormSheet({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting || !isValid}>
-              {submitting ? "Saving…" : mode === "create" ? "Create vehicle" : "Save changes"}
+            <Button type="submit" disabled={saveDisabled}>
+              {submitting || isSubmitting
+                ? "Saving…"
+                : mode === "create"
+                  ? "Create vehicle"
+                  : "Save changes"}
             </Button>
           </SheetFooter>
         </form>

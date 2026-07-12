@@ -20,18 +20,20 @@
 
 ## Index
 
-| Doc                                              | Purpose                                           |
-| ------------------------------------------------ | ------------------------------------------------- |
-| [00-decision-log.md](./00-decision-log.md)       | ADRs (incl. supersessions)                        |
-| [01-system-overview.md](./01-system-overview.md) | Scope, modules, out-of-scope                      |
-| [02-database-schema.md](./02-database-schema.md) | Tables, FKs, Better Auth, metrics                 |
-| [03-status-machines.md](./03-status-machines.md) | Status transitions                                |
-| [04-business-rules.md](./04-business-rules.md)   | Rules + op cost formula                           |
-| [05-rbac-matrix.md](./05-rbac-matrix.md)         | Role access                                       |
-| [06-domain-flows.md](./06-domain-flows.md)       | Workflows + trip complete sequence                |
-| [07-open-questions.md](./07-open-questions.md)   | Deferred: notification cron (revenue resolved)    |
-| [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; shadcn MCP first |
-| [09-vehicles-api.md](./09-vehicles-api.md)       | Vehicles HTTP API + registry UI (ODO-22/23)       |
+| Doc                                              | Purpose                                         |
+| ------------------------------------------------ | ----------------------------------------------- |
+| [00-decision-log.md](./00-decision-log.md)       | ADRs (incl. supersessions)                      |
+| [01-system-overview.md](./01-system-overview.md) | Scope, modules, out-of-scope                    |
+| [02-database-schema.md](./02-database-schema.md) | Tables, FKs, Better Auth, metrics               |
+| [03-status-machines.md](./03-status-machines.md) | Status transitions                              |
+| [04-business-rules.md](./04-business-rules.md)   | Rules + op cost formula                         |
+| [05-rbac-matrix.md](./05-rbac-matrix.md)         | Role access                                     |
+| [06-domain-flows.md](./06-domain-flows.md)       | Workflows + trip complete sequence              |
+| [07-open-questions.md](./07-open-questions.md)   | Resolved archive (OQ-01 revenue, OQ-08 cron)    |
+| [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; dark mode; MCP |
+| [09-vehicles-api.md](./09-vehicles-api.md)       | Vehicles HTTP API + registry UI (ODO-22/23)     |
+| [10-notifications.md](./10-notifications.md)     | License-expiry outbox cron (ODO-40)             |
+| [../resend-setup.md](../resend-setup.md)         | Resend dashboard + local testing (no domain)    |
 
 ## Quick locks (current)
 
