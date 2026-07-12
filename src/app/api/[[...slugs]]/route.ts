@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 
 import {
+  dashboardModule,
   driversModule,
   fuelExpensesModule,
   locationsModule,
@@ -19,7 +20,8 @@ export const app = new Elysia({ prefix: "/api" })
   .use(locationsModule)
   .use(tripsModule)
   .use(maintenanceModule)
-  .use(fuelExpensesModule);
+  .use(fuelExpensesModule)
+  .use(dashboardModule);
 
 export const GET = app.handle;
 export const POST = app.handle;

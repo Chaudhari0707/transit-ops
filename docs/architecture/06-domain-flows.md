@@ -55,10 +55,16 @@ Aligned with Excalidraw mockup screens 0–8.
 
 ## Flow G — Dashboard KPIs
 
-- Active vehicles = non-retired count.
-- Operational cost (analytics) = fuel + maintenance.
-- Filters: type + status. **No region filter.**
-- ROI / monthly revenue: **static placeholders** for demo.
+API: `GET /api/dashboard/kpis`, `GET /api/dashboard/recent-trips` (module `dashboard`).
+
+- Active vehicles = non-retired count (`available + on_trip + in_shop`).
+- Available vehicles / vehicles in maintenance (`in_shop`).
+- Active trips = `dispatched`; pending trips = `draft`.
+- Drivers on duty = drivers with status `on_trip`.
+- Fleet utilization % = `on_trip / (available + on_trip + in_shop) × 100`.
+- Vehicle status breakdown (for chart): available / on_trip / in_shop / retired counts.
+- **Recent trips filters** (vehicle type + trip status only — **no region**): apply only to the recent trips list, not KPIs.
+- ROI / monthly revenue: **static placeholders** for demo (reports).
 
 ## Flow H — Trip complete sequence (final — ADR-053)
 

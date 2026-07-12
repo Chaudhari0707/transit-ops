@@ -1,4 +1,5 @@
 // Re-export all modules
+export { dashboardModule } from "@/modules/dashboard";
 export { driversModule } from "@/modules/drivers";
 export { fuelExpensesModule } from "@/modules/fuel-expenses";
 export { locationsModule } from "@/modules/locations";
