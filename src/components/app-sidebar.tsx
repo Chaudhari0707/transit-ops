@@ -86,7 +86,7 @@ const data = {
     },
     {
       name: "Documents",
-      url: "#",
+      url: "/documents",
       icon: <TruckIcon />,
     },
   ],

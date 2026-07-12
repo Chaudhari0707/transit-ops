@@ -60,6 +60,7 @@ Append-only style. Do not rewrite history; supersede with a new ADR row.
 | ADR-054 | 2026-07-12 | UI stack                 | **shadcn only**; **blocks first** (`login-02`, `dashboard-01`); else components; **MCP first**              | No custom UI libs; see `08-ui-shadcn.md`                                            |
 | ADR-055 | 2026-07-12 | Trip locations           | **`locations` table** replaces free-text source/destination; FK on trips; source ≠ destination              | Dispatcher dropdowns; fleet manager can add locations                               |
 | ADR-056 | 2026-07-12 | Reports & Analytics      | Route `/analytics`; API `/api/analytics/*`; KPIs: efficiency, utilization, op cost, ROI from `revenue_logs` | PDF §3.8 + Excalidraw screen 7; FM + FA only; CSV export; ODO-34/50                 |
+| ADR-057 | 2026-07-12 | Documents module         | `/documents` UI + `/api/documents/*`; local disk under `UPLOAD_STORAGE_DIR`; soft delete; FM only           | ADR-025/040; ODO-41                                                                 |
 
 ## Scaffold note (migration intent)
 

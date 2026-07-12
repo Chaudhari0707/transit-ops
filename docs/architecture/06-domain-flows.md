@@ -76,6 +76,20 @@ Aligned with Excalidraw mockup screens 0–8.
 
 API: `GET /api/analytics/report`, `GET /api/analytics/summary`, `GET /api/analytics/export`.
 
+## Flow J — Documents (`/documents`) — ODO-41 / ADR-025 / ADR-040
+
+**Role:** Fleet Manager only (read + write).
+
+| Action      | API                                                   | Notes                                                              |
+| ----------- | ----------------------------------------------------- | ------------------------------------------------------------------ |
+| List        | `GET /api/documents?entityType=&entityId=`            | Soft-deleted excluded                                              |
+| Upload      | `POST /api/documents/upload` (multipart)              | Validates size (`UPLOAD_MAX_BYTES`) + MIME (`UPLOAD_ALLOWED_MIME`) |
+| Download    | `GET /api/documents/:id/file`                         | Streams local file                                                 |
+| Soft delete | `DELETE /api/documents/:id`                           | Sets `deleted_at`                                                  |
+| Targets     | `GET /api/documents/vehicles`, `.../maintenance-logs` | Attachment parents                                                 |
+
+Storage: metadata in `documents` table; bytes under `UPLOAD_STORAGE_DIR` (default `uploads/`).
+
 ## Flow H — Trip complete sequence (final — ADR-053)
 
 Mockup: _“On Complete: odometer → fuel log → expenses → Vehicle & Driver Available”_
