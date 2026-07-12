@@ -5,7 +5,7 @@ import { USER_ROLES } from "@/lib/auth/_types/user-role";
 
 const validPayload = {
   email: "admin@example.com",
-  password: "ChangeMe123!",
+  password: "password",
   role: "fleet_manager" as const,
 };
 
@@ -75,14 +75,14 @@ describe("signInSchema success modes", () => {
   test("trims email and password before validation", () => {
     const result = signInSchema.safeParse({
       email: "  admin@example.com  ",
-      password: "  ChangeMe123!  ",
+      password: "  password  ",
       role: "fleet_manager",
     });
 
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.email).toBe("admin@example.com");
-      expect(result.data.password).toBe("ChangeMe123!");
+      expect(result.data.password).toBe("password");
     }
   });
 

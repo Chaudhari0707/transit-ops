@@ -278,7 +278,7 @@ Optional table: Better Auth `rateLimit` when `storage: "database"`.
 
 **Checks:** cargo/planned_distance > 0; `source_location_id <> destination_location_id`; on complete end_odometer ≥ start_odometer.
 
-**Complete contract (ADR-053):** same transaction must write `fuel_logs` + one or more `expenses` rows (with `trip_id`) then set trip completed and free vehicle/driver.
+**Complete contract (ADR-053 + ADR-056):** same transaction must write `fuel_logs` + one or more `expenses` rows (with `trip_id`) + one `revenue_logs` row (with `trip_id`) then set trip completed and free vehicle/driver.
 
 ---
 
@@ -349,10 +349,53 @@ Optional table: Better Auth `rateLimit` when `storage: "database"`.
 
 **Indexes:** `(vehicle_id, incurred_on)`; `(expense_category_id)`; `(trip_id)`.
 
-**Trip complete (ADR-053):** Dispatcher must log trip expense(s) into this table (with `trip_id`) in the same transaction as odometer + fuel_log + status flips.
+**Trip complete (ADR-053):** Dispatcher must log trip expense(s) into this table (with `trip_id`) in the same transaction as odometer + fuel_log + revenue_log + status flips.
 
 **Fuel & Expense screen (mockup):**  
 Fuel table from `fuel_logs`. “Other expenses” table: trip-linked `expenses` (toll/misc) **plus a computed column** `maint_linked` = sum of `maintenance_logs.cost_inr` for that vehicle (and/or period) — **read-only link**, not a second write of maintenance cost.
+
+---
+
+## 2.7b Revenue (trip-earned income)
+
+### App constant (not a Settings table — ADR-046)
+
+| Constant                     | Default | Unit                       | Notes                                   |
+| ---------------------------- | ------- | -------------------------- | --------------------------------------- |
+| `REVENUE_RATE_INR_PER_KM_KG` | `0.05`  | INR per km per kg capacity | Single fleet-wide rate for hackathon v1 |
+
+### Formula (ADR-056)
+
+```
+amount_inr = planned_distance_km × capacity_kg × rate_inr_per_km_kg
+```
+
+- **`planned_distance_km`:** from the trip row (required at create; not re-entered on complete).
+- **`capacity_kg`:** snapshot of `vehicles.max_load_capacity_kg` at complete time (not cargo weight — we sell capacity as a transport company).
+- **`rate_inr_per_km_kg`:** app constant snapshotted onto the log row so historical revenue stays stable if the rate constant changes later.
+
+### `revenue_logs` (PK bigserial)
+
+| Column                  | Type          | Null | Default | Notes                                                              |
+| ----------------------- | ------------- | ---- | ------- | ------------------------------------------------------------------ |
+| id                      | bigserial     | NO   |         | **PK**                                                             |
+| trip_id                 | uuid          | NO   |         | **FK → trips.id**; **unique** (one revenue row per completed trip) |
+| vehicle_id              | uuid          | NO   |         | **FK → vehicles.id** (denormalized for vehicle ROI rollups)        |
+| planned_distance_km     | numeric(12,2) | NO   |         | Snapshot from trip                                                 |
+| capacity_kg             | numeric(12,2) | NO   |         | Snapshot of vehicle max load capacity at complete                  |
+| rate_inr_per_km_kg      | numeric(12,4) | NO   |         | Snapshot of app rate used                                          |
+| amount_inr              | numeric(12,2) | NO   |         | Computed revenue = planned × capacity × rate                       |
+| earned_on               | date          | NO   |         | Business date of earning (trip complete date)                      |
+| created_by_user_id      | uuid/text     | NO   |         | **FK → user.id** (dispatcher completing the trip)                  |
+| created_at / updated_at | timestamptz   | NO   | now()   |                                                                    |
+
+**No soft delete** — immutable log (like fuel/expenses).
+
+**Indexes:** unique `(trip_id)`; `(vehicle_id, earned_on)`; `(earned_on)`.
+
+**Checks:** `planned_distance_km > 0`; `capacity_kg > 0`; `rate_inr_per_km_kg > 0`; `amount_inr > 0`.
+
+**Write path:** **only** trip complete (Dispatcher). No manual Finance create/edit in v1. Reports/analytics **read** only.
 
 ---
 
@@ -406,7 +449,7 @@ License expiry (and future) email pipeline.
 
 **Indexes:** `(status, scheduled_for)`.
 
-**Worker note (ADR-041):** Table is designed now; cron/worker that drains outbox is a **later task** — not v1 required behavior.
+**Worker note (ADR-056):** Enqueue/drain via `bun run notifications:*`; schedule time from `NOTIFICATIONS_SCHEDULE_TIME` (UTC). See `10-notifications.md`.
 
 ---
 
@@ -423,6 +466,7 @@ erDiagram
   user ||--o{ maintenance_logs : created_by
   user ||--o{ fuel_logs : created_by
   user ||--o{ expenses : created_by
+  user ||--o{ revenue_logs : created_by
   user ||--o| drivers : "optional login"
 
   vehicle_types ||--o{ vehicles : type
@@ -436,6 +480,8 @@ erDiagram
   vehicles ||--o{ expenses : cost
   expense_categories ||--o{ expenses : category
   trips ||--o{ expenses : optional
+  trips ||--|| revenue_logs : "1:1 on complete"
+  vehicles ||--o{ revenue_logs : earned
   vehicles ||--o{ documents : meta
   maintenance_logs ||--o{ documents : meta
 ```
@@ -444,19 +490,21 @@ erDiagram
 
 ## 2.10 Derived metrics (not stored tables)
 
-| Metric                         | Formula / definition                                                           |
-| ------------------------------ | ------------------------------------------------------------------------------ |
-| **Active vehicles**            | Non-retired count — `status != 'retired' AND deleted_at IS NULL` (ADR-035)     |
-| Available vehicles             | `status = available` AND not deleted                                           |
-| Vehicles in maintenance        | `status = in_shop`                                                             |
-| Active trips                   | `status = dispatched`                                                          |
-| Pending trips                  | `status = draft`                                                               |
-| Drivers on duty                | `status = on_trip`                                                             |
-| Fleet utilization %            | `(on_trip / (available + on_trip + in_shop)) × 100` — retired excluded         |
-| Fuel efficiency                | sum(actual_distance_km) / sum(fuel liters) per vehicle                         |
-| **Operational cost / vehicle** | **`SUM(fuel_logs.cost_inr) + SUM(maintenance_logs.cost_inr)`** (ADR-044)       |
-| Toll/misc expenses             | `SUM(expenses.amount_inr)` — **not** in operational cost auto total            |
-| Vehicle ROI / Monthly revenue  | **Static demo placeholders** for hackathon UI only (ADR-050); no revenue table |
+| Metric                         | Formula / definition                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| **Active vehicles**            | Non-retired count — `status != 'retired' AND deleted_at IS NULL` (ADR-035)                |
+| Available vehicles             | `status = available` AND not deleted                                                      |
+| Vehicles in maintenance        | `status = in_shop`                                                                        |
+| Active trips                   | `status = dispatched`                                                                     |
+| Pending trips                  | `status = draft`                                                                          |
+| Drivers on duty                | `status = on_trip`                                                                        |
+| Fleet utilization %            | `(on_trip / (available + on_trip + in_shop)) × 100` — retired excluded                    |
+| Fuel efficiency                | sum(actual_distance_km) / sum(fuel liters) per vehicle                                    |
+| **Operational cost / vehicle** | **`SUM(fuel_logs.cost_inr) + SUM(maintenance_logs.cost_inr)`** (ADR-044)                  |
+| Toll/misc expenses             | `SUM(expenses.amount_inr)` — **not** in operational cost auto total                       |
+| **Trip revenue**               | `planned_distance_km × capacity_kg × rate` stored on `revenue_logs` (ADR-056)             |
+| **Monthly revenue**            | `SUM(revenue_logs.amount_inr)` grouped by `date_trunc('month', earned_on)`                |
+| **Vehicle ROI %**              | `((SUM(revenue) − op_cost) / acquisition_cost_inr) × 100` (ADR-056); op_cost = fuel+maint |
 
 **Dashboard filters (v1):** **vehicle type + status only**. No region filter (ADR-043 / ADR-052).
 
@@ -468,8 +516,8 @@ erDiagram
 
 1. Four Better Auth users (one per role) + credential `account` rows.
 2. Masters: ≥2 vehicle types, ≥2 license categories, ≥3 expense categories (TOLL/FINE/MISC), ≥3 maintenance types.
-3. Sample vehicles/drivers/trips in various statuses for dashboard.
-4. Optional static analytics demo constants for ROI % / monthly revenue display.
+3. Sample vehicles/drivers/trips in various statuses for dashboard (align with demo trip routes).
+4. For each **completed** seed trip: `fuel_logs` + `expenses` + **`revenue_logs`** so reports have real monthly revenue / ROI series.
 
 ---
 

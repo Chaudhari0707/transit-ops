@@ -18,8 +18,12 @@ test.describe("sign-in page shell", () => {
 
   test("landing page sign-in link routes to /sign-in", async ({ page }) => {
     await gotoRoute(page, "/");
-    await page.getByRole("link", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/sign-in$/);
+    const signInCta = page
+      .getByRole("link", { name: "Sign in" })
+      .or(page.getByRole("button", { name: "Sign in" }));
+    await expect(signInCta.first()).toBeVisible({ timeout: 15_000 });
+    await signInCta.first().click();
+    await expect(page).toHaveURL(/\/sign-in/);
   });
 });
 
@@ -64,7 +68,7 @@ test.describe("sign-in auth flows", () => {
     await gotoSignIn(page);
     await fillSignInForm(page, {
       email: runtime.adminEmail,
-      password: runtime.adminPassword ?? "ChangeMe123!",
+      password: runtime.adminPassword ?? "password",
       role: "dispatcher",
     });
     await submitSignIn(page, { waitForAuthResponse: true });
@@ -77,7 +81,7 @@ test.describe("sign-in auth flows", () => {
     await gotoSignIn(page);
     await fillSignInForm(page, {
       email: runtime.adminEmail,
-      password: runtime.adminPassword ?? "ChangeMe123!",
+      password: runtime.adminPassword ?? "password",
       role: "fleet_manager",
     });
     await submitSignIn(page, { waitForAuthResponse: true });

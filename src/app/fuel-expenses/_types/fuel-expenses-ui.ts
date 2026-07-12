@@ -9,6 +9,7 @@ export type ExpenseFormState = {
   description: string;
   expenseCategoryId: string;
   incurredOn: string;
+  tripId: string;
   vehicleId: string;
 };
 
@@ -21,6 +22,7 @@ export type FuelFormState = {
   liters: string;
   loggedAt: string;
   notes: string;
+  tripId: string;
   vehicleId: string;
 };
 
@@ -37,9 +39,12 @@ export type FuelLogUi = {
 
 export type OperationalSummaryUi = {
   expensesTotalInr: string;
+  fuelEfficiencyKmPerL: string | null;
   fuelTotalInr: string;
+  fuelTotalLiters: string;
   maintenanceTotalInr: string;
   operationalCostInr: string;
+  totalDistanceKm: string;
 };
 
 export type OtherExpenseRowUi = {
@@ -52,6 +57,18 @@ export type OtherExpenseRowUi = {
   vehicleNameModel: string;
   vehicleRegistration: string;
   vehicleStatus: "available" | "in_shop" | "on_trip" | "retired";
+};
+
+export type TripOption = {
+  destinationName: string;
+  driverName: string;
+  id: string;
+  label: string;
+  status: "dispatched" | "completed";
+  tripDate: string;
+  vehicleId: string;
+  vehicleNameModel: string;
+  vehicleRegistration: string;
 };
 
 export type VehicleOption = {

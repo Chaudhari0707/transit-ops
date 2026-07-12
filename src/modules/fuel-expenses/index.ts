@@ -195,4 +195,26 @@ export const fuelExpensesModule = new Elysia({
         403: FuelExpensesModel.errorResponse,
       },
     },
+  )
+  .get(
+    "/trips",
+    async ({ request, status }) => {
+      try {
+        return await FuelExpensesService.listTripOptions(request.headers);
+      } catch (error) {
+        const message = errorMessage(error, "Unable to list trips.");
+        const code = resolveErrorCodeNumber(message);
+        if (code === 401) return status(401, errorBody(message));
+        if (code === 403) return status(403, errorBody(message));
+        return status(400, errorBody(message));
+      }
+    },
+    {
+      response: {
+        200: FuelExpensesModel.tripOptionsResponse,
+        400: FuelExpensesModel.errorResponse,
+        401: FuelExpensesModel.errorResponse,
+        403: FuelExpensesModel.errorResponse,
+      },
+    },
   );

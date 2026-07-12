@@ -1,5 +1,7 @@
 import { beforeAll, describe, expect, mock, test } from "bun:test";
 
+import { UNAUTHORIZED_MESSAGE } from "@/lib/api/http-errors";
+
 import { loadTestEnvFiles } from "../../support/load-env";
 
 await loadTestEnvFiles();
@@ -22,21 +24,21 @@ beforeAll(async () => {
  */
 describeWithEnv("requireAuthSession unauthenticated failure modes", () => {
   test("rejects empty headers (no session cookie)", async () => {
-    await expect(requireAuthSession(new Headers())).rejects.toThrow("Unauthorized");
+    await expect(requireAuthSession(new Headers())).rejects.toThrow(UNAUTHORIZED_MESSAGE);
   });
 
   test("rejects unrelated cookies that are not Better Auth session", async () => {
     const headers = new Headers({
       cookie: "session=userId.fake-token; other=1",
     });
-    await expect(requireAuthSession(headers)).rejects.toThrow("Unauthorized");
+    await expect(requireAuthSession(headers)).rejects.toThrow(UNAUTHORIZED_MESSAGE);
   });
 
   test("rejects forged better-auth session token without valid store entry", async () => {
     const headers = new Headers({
       cookie: "better-auth.session_token=forged.invalid.token",
     });
-    await expect(requireAuthSession(headers)).rejects.toThrow("Unauthorized");
+    await expect(requireAuthSession(headers)).rejects.toThrow(UNAUTHORIZED_MESSAGE);
   });
 });
 

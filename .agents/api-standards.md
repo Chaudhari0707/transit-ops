@@ -31,16 +31,30 @@ Rules:
 
 ## 2. Controller contract (`index.ts`)
 
+**Canonical pattern** (copy `src/modules/drivers/index.ts` or `src/modules/vehicles/index.ts`):
+
 ```typescript
+import { errorMessage, resolveErrorCodeNumber } from "@/lib/api/errors";
+
+function errorBody(message: string) {
+  return { message };
+}
+
 export const fooModule = new Elysia({ name: "foo", prefix: "/foo" }).post(
   "/",
   async ({ body, status }) => {
     try {
-      const result = await FooService.doThing(body);
-      return result;
+      return await FooService.doThing(body);
     } catch (error) {
       const message = errorMessage(error, "Unable to …");
-      return status(resolveErrorCode(message), { message });
+      const code = resolveErrorCodeNumber(message);
+      // Explicit numeric branches — required for Elysia SelectiveStatus + tsc.
+      if (code === 401) return status(401, errorBody(message));
+      if (code === 403) return status(403, errorBody(message));
+      if (code === 404) return status(404, errorBody(message));
+      if (code === 409) return status(409, errorBody(message));
+      if (code === 429) return status(429, errorBody(message));
+      return status(400, errorBody(message));
     }
   },
   {
@@ -51,6 +65,8 @@ export const fooModule = new Elysia({ name: "foo", prefix: "/foo" }).post(
       401: FooModel.errorResponse,
       403: FooModel.errorResponse,
       404: FooModel.errorResponse,
+      409: FooModel.errorResponse,
+      429: FooModel.errorResponse,
     },
   },
 );
@@ -67,25 +83,39 @@ Required:
 | Errors                          | `throw new Error(message)` in service; map to HTTP status |
 | No business logic in controller | Delegate to `*Service`                                    |
 
-### HTTP status map
+### Error handling — never regress (blocking)
 
-| Message pattern           | Code (Elysia `status()` string) |
-| ------------------------- | ------------------------------- |
-| `Unauthorized`            | `"401"`                         |
-| `Forbidden`               | `"403"`                         |
-| ends with `not found` (i) | `"404"`                         |
-| `Conflict` / `Conflict:…` | `"409"`                         |
-| `Too many requests`       | `"429"`                         |
-| everything else           | `"400"`                         |
+| Do                                                          | Do **not**                                                                   |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `return status(401, { message })` with **numeric** literals | `return new Response(JSON.stringify({ message }), { status: code })`         |
+| Explicit `if (code === 401) return status(401, …)` branches | `status(resolveErrorCode(message), …)` alone (string codes break `tsc`)      |
+| `resolveErrorCodeNumber` + narrow with `=== 401` etc.       | Rely on string `"401"` / `"403"` for domain API errors (HTTP can become 200) |
+| List every error status in `response: { 400, 401, … }`      | Omit statuses the handler can return                                         |
+| Pass `bun run typecheck` after any `index.ts` change        | Ship controllers that only look fine at runtime                              |
 
-Use `errorMessage` + `resolveErrorCode` from `src/lib/api/errors.ts`.
+**Why:** Returning `Response` unions as `Promise<Response \| DomainType>` fails TypeScript (`tsc` / pre-commit). Non-numeric Elysia status values have been observed as HTTP 200.
+
+### HTTP status map (service message → code)
+
+| Message pattern (case-insensitive)                  | Code |
+| --------------------------------------------------- | ---- |
+| `Unauthorized` / session expired / not signed in    | 401  |
+| `Forbidden` / do not have permission                | 403  |
+| ends with `not found`                               | 404  |
+| `Conflict` / `Conflict:…` / “already has an open …” | 409  |
+| `Too many requests`                                 | 429  |
+| everything else                                     | 400  |
+
+Use `errorMessage` + `resolveErrorCodeNumber` from `src/lib/api/errors.ts`. Prefer shared user-facing constants from `src/lib/api/http-errors.ts` when throwing 401/403.
 
 ---
 
 ## 3. Model contract (`model.ts`)
 
 - Export runtime `XxxModel` object with `errorResponse`, body, response schemas
-- Export **types** from `_types/` — not from `model.ts`
+- Export **types** from `_types/` — not from `model.ts`, `service.ts`, `index.ts`, or `_lib/*`
+- `export type` / `export interface` outside `_types/` fails lint (`local/no-exported-types-in-source`) — pre-commit will reject
+- Types in `_types/` must be alphabetically ordered (`local/sort-types-and-keys`)
 - Use `t.String({ format: "uuid" })` for IDs where applicable
 - `minLength` / `maxLength` / `minimum` / `maximum` on user input
 - Optional nullable fields: `t.Optional(t.Union([t.String(), t.Null()]))`

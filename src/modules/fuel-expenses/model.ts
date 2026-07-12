@@ -81,10 +81,13 @@ export const FuelExpensesModel = {
     items: t.Array(otherExpenseRow),
   }),
   summaryResponse: t.Object({
-    fuelTotalInr: t.String(),
-    maintenanceTotalInr: t.String(),
     expensesTotalInr: t.String(),
+    fuelEfficiencyKmPerL: t.Union([t.String(), t.Null()]),
+    fuelTotalInr: t.String(),
+    fuelTotalLiters: t.String(),
+    maintenanceTotalInr: t.String(),
     operationalCostInr: t.String(),
+    totalDistanceKm: t.String(),
   }),
   categoriesResponse: t.Object({
     items: t.Array(
@@ -102,6 +105,21 @@ export const FuelExpensesModel = {
         registrationNumber: t.String(),
         nameModel: t.String(),
         status: vehicleStatus,
+      }),
+    ),
+  }),
+  tripOptionsResponse: t.Object({
+    items: t.Array(
+      t.Object({
+        id: t.String({ format: "uuid" }),
+        vehicleId: t.String({ format: "uuid" }),
+        vehicleRegistration: t.String(),
+        vehicleNameModel: t.String(),
+        destinationName: t.String(),
+        driverName: t.String(),
+        tripDate: t.String(),
+        status: t.Union([t.Literal("dispatched"), t.Literal("completed")]),
+        label: t.String(),
       }),
     ),
   }),

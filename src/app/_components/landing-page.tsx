@@ -99,10 +99,10 @@ export function LandingPage() {
             </a>
           </nav>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" render={<Link href="/sign-in" />}>
+            <Button variant="ghost" nativeButton={false} render={<Link href="/sign-in" />}>
               Sign in
             </Button>
-            <Button render={<Link href="/dashboard" />}>
+            <Button nativeButton={false} render={<Link href="/dashboard" />}>
               Open dashboard
               <ArrowRightIcon className="size-4" />
             </Button>
@@ -126,7 +126,7 @@ export function LandingPage() {
             real-time operational KPIs.
           </p>
           <div className="mt-10 flex flex-wrap gap-4">
-            <Button size="lg" render={<Link href="/dashboard" />}>
+            <Button size="lg" nativeButton={false} render={<Link href="/dashboard" />}>
               Explore live dashboard
               <ArrowRightIcon className="size-4" />
             </Button>
@@ -211,7 +211,7 @@ export function LandingPage() {
                 analyze fuel and maintenance costs across your entire logistics network.
               </p>
             </div>
-            <Button size="lg" render={<Link href="/dashboard" />}>
+            <Button size="lg" nativeButton={false} render={<Link href="/dashboard" />}>
               Go to dashboard
               <ArrowRightIcon className="size-4" />
             </Button>

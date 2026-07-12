@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import {
   assertMaintenanceReadRole,
   assertMaintenanceWriteRole,
@@ -13,11 +14,11 @@ import {
 
 describe("assertMaintenanceReadRole failure modes", () => {
   test("rejects dispatcher", () => {
-    expect(() => assertMaintenanceReadRole("dispatcher")).toThrow("Forbidden");
+    expect(() => assertMaintenanceReadRole("dispatcher")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("rejects safety_officer", () => {
-    expect(() => assertMaintenanceReadRole("safety_officer")).toThrow("Forbidden");
+    expect(() => assertMaintenanceReadRole("safety_officer")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows fleet_manager and financial_analyst", () => {
@@ -28,11 +29,11 @@ describe("assertMaintenanceReadRole failure modes", () => {
 
 describe("assertMaintenanceWriteRole failure modes", () => {
   test("rejects financial_analyst (view only)", () => {
-    expect(() => assertMaintenanceWriteRole("financial_analyst")).toThrow("Forbidden");
+    expect(() => assertMaintenanceWriteRole("financial_analyst")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("rejects dispatcher", () => {
-    expect(() => assertMaintenanceWriteRole("dispatcher")).toThrow("Forbidden");
+    expect(() => assertMaintenanceWriteRole("dispatcher")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows fleet_manager", () => {

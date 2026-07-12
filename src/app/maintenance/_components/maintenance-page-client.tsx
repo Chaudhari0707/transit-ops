@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { MaintenanceLogForm } from "@/app/maintenance/_components/maintenance-log-form";
@@ -21,6 +20,11 @@ import type {
   MaintenanceVehicleOption,
 } from "@/app/maintenance/_types/maintenance-ui";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  isUnauthorizedErrorMessage,
+  SESSION_EXPIRED_TOAST,
+  toUserFacingApiError,
+} from "@/lib/api/http-errors";
 
 const emptyForm: MaintenanceFormState = {
   vehicleId: "",
@@ -31,13 +35,16 @@ const emptyForm: MaintenanceFormState = {
   description: "",
 };
 
-function isUnauthorizedMessage(message: string): boolean {
-  const lower = message.toLowerCase();
-  return lower.includes("unauthorized") || lower.includes("request failed (401)");
+function handleClientApiError(message: string): void {
+  if (isUnauthorizedErrorMessage(message)) {
+    toast.error(SESSION_EXPIRED_TOAST);
+    window.location.assign("/sign-in");
+    return;
+  }
+  toast.error(toUserFacingApiError(message));
 }
 
 export function MaintenancePageClient({ canWrite }: MaintenancePageClientProps) {
-  const router = useRouter();
   const [logs, setLogs] = useState<MaintenanceLogUi[]>([]);
   const [types, setTypes] = useState<MaintenanceTypeOption[]>([]);
   const [vehicles, setVehicles] = useState<MaintenanceVehicleOption[]>([]);
@@ -69,22 +76,11 @@ export function MaintenancePageClient({ canWrite }: MaintenancePageClientProps) 
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load maintenance data";
-
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      if (message === "Forbidden") {
-        toast.error(
-          "Your role cannot access maintenance. Fleet Manager or Financial Analyst only.",
-        );
-      } else {
-        toast.error(message);
-      }
+      handleClientApiError(message);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     void loadAll();
@@ -103,11 +99,7 @@ export function MaintenancePageClient({ canWrite }: MaintenancePageClientProps) 
       await loadAll();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to open maintenance";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setSubmitting(false);
     }
@@ -122,11 +114,7 @@ export function MaintenancePageClient({ canWrite }: MaintenancePageClientProps) 
       await loadAll();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to close maintenance";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setClosingId(null);
     }

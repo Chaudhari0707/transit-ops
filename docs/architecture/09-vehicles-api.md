@@ -55,7 +55,7 @@ Mapped by `src/lib/api/errors.ts`: `Unauthorized`→401, `Forbidden`→403, `* n
 Use a JSON file body and Origin header — see prior session notes or:
 
 ```powershell
-bun -e "await Bun.write('body.json', JSON.stringify({email:'admin@example.com',password:'ChangeMe123!'}))"
+bun -e "await Bun.write('body.json', JSON.stringify({email:'admin@example.com',password:'password'}))"
 curl.exe -c cookies.txt -b cookies.txt -X POST http://127.0.0.1:3000/api/auth/sign-in/email -H "Content-Type: application/json" -H "Origin: http://127.0.0.1:3000" --data-binary "@body.json"
 curl.exe -b cookies.txt -H "Origin: http://127.0.0.1:3000" http://127.0.0.1:3000/api/vehicles
 ```

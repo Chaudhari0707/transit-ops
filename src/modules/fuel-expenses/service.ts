@@ -4,18 +4,32 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { requireSessionUser } from "@/lib/auth/session";
 import { getDb } from "@/lib/db/client";
-import { expenseCategories, expenses, fuelLogs, maintenanceLogs, vehicles } from "@/lib/db/schema";
+import {
+  expenseCategories,
+  expenses,
+  fuelLogs,
+  maintenanceLogs,
+  trips,
+  vehicles,
+} from "@/lib/db/schema";
+import { rollupOtherExpenseRows } from "@/modules/fuel-expenses/_lib/other-expenses-rollup";
 import {
   assertAllowedExpenseCategoryCode,
   assertFuelExpenseReadRole,
   assertFuelExpenseWriteRole,
+  computeFuelEfficiencyKmPerL,
   computeOperationalCostInr,
+  efficiencyToFixed,
   moneyToFixed,
   normalizeDateOnly,
   normalizeNonNegativeAmount,
   normalizePositiveAmount,
   normalizePositiveLiters,
 } from "@/modules/fuel-expenses/_lib/rules";
+import {
+  fetchFuelExpenseTripOptions,
+  resolveTripLink,
+} from "@/modules/fuel-expenses/_lib/trip-options";
 import type {
   CreateExpenseInput,
   CreateFuelLogInput,
@@ -129,7 +143,7 @@ export abstract class FuelExpensesService {
     const costInr = normalizeNonNegativeAmount(body.costInr, "costInr");
     const loggedAt = normalizeDateOnly(body.loggedAt, "loggedAt");
     const notes = body.notes?.trim() ? body.notes.trim() : null;
-    const tripId = body.tripId?.trim() ? body.tripId.trim() : null;
+    const requestedTripId = body.tripId?.trim() ? body.tripId.trim() : null;
 
     const db = getDb();
 
@@ -142,6 +156,8 @@ export abstract class FuelExpensesService {
     if (!vehicle || vehicle.deletedAt) {
       throw new Error("Vehicle not found");
     }
+
+    const tripId = await resolveTripLink(db, requestedTripId, vehicle.id);
 
     if (tripId) {
       const [existing] = await db
@@ -215,7 +231,7 @@ export abstract class FuelExpensesService {
     const amountInr = normalizePositiveAmount(body.amountInr, "amountInr");
     const incurredOn = normalizeDateOnly(body.incurredOn, "incurredOn");
     const description = body.description?.trim() ? body.description.trim() : null;
-    const tripId = body.tripId?.trim() ? body.tripId.trim() : null;
+    const requestedTripId = body.tripId?.trim() ? body.tripId.trim() : null;
 
     const db = getDb();
 
@@ -228,6 +244,8 @@ export abstract class FuelExpensesService {
     if (!vehicle || vehicle.deletedAt) {
       throw new Error("Vehicle not found");
     }
+
+    const tripId = await resolveTripLink(db, requestedTripId, vehicle.id);
 
     const [category] = await db
       .select({
@@ -313,7 +331,7 @@ export abstract class FuelExpensesService {
       .from(expenses)
       .innerJoin(expenseCategories, eq(expenses.expenseCategoryId, expenseCategories.id));
 
-    // Closed maintenance only for MAINT. (LINKED) display (user + completed status).
+    // Closed maintenance only for MAINT. (LINKED) display (ADR-045).
     const maintRows = await db
       .select({
         vehicleId: maintenanceLogs.vehicleId,
@@ -322,84 +340,9 @@ export abstract class FuelExpensesService {
       .from(maintenanceLogs)
       .where(eq(maintenanceLogs.status, "closed"));
 
-    const byVehicle = new Map<
-      string,
-      {
-        fine: number;
-        misc: number;
-        toll: number;
-        tripIds: Set<string>;
-      }
-    >();
-
-    for (const row of expenseRows) {
-      const bucket = byVehicle.get(row.vehicleId) ?? {
-        fine: 0,
-        misc: 0,
-        toll: 0,
-        tripIds: new Set<string>(),
-      };
-      const amount = Number(row.amountInr) || 0;
-      const code = row.categoryCode.toUpperCase();
-
-      if (code === "TOLL") {
-        bucket.toll += amount;
-      } else if (code === "FINE") {
-        bucket.fine += amount;
-      } else {
-        bucket.misc += amount;
-      }
-
-      if (row.tripId) {
-        bucket.tripIds.add(row.tripId);
-      }
-
-      byVehicle.set(row.vehicleId, bucket);
-    }
-
-    const maintByVehicle = new Map<string, number>();
-
-    for (const row of maintRows) {
-      const prev = maintByVehicle.get(row.vehicleId) ?? 0;
-      maintByVehicle.set(row.vehicleId, prev + (Number(row.costInr) || 0));
-    }
-
-    const items: OtherExpenseRow[] = [];
-
-    for (const vehicle of vehicleRows) {
-      const expenseBucket = byVehicle.get(vehicle.id);
-      const maintLinked = maintByVehicle.get(vehicle.id) ?? 0;
-      const toll = expenseBucket?.toll ?? 0;
-      const misc = expenseBucket?.misc ?? 0;
-      const fine = expenseBucket?.fine ?? 0;
-
-      // Only show vehicles that have expenses and/or closed maintenance cost.
-      if (toll + misc + fine + maintLinked <= 0) {
-        continue;
-      }
-
-      const tripIds = expenseBucket ? [...expenseBucket.tripIds] : [];
-      const tripLabel =
-        tripIds.length === 0
-          ? null
-          : tripIds.length === 1
-            ? `TR-${tripIds[0]!.slice(0, 4).toUpperCase()}`
-            : `${tripIds.length} trips`;
-
-      items.push({
-        vehicleId: vehicle.id,
-        vehicleRegistration: vehicle.registrationNumber,
-        vehicleNameModel: vehicle.nameModel,
-        vehicleStatus: vehicle.status,
-        tripLabel,
-        tollInr: moneyToFixed(toll),
-        miscInr: moneyToFixed(misc),
-        fineInr: moneyToFixed(fine),
-        maintLinkedInr: moneyToFixed(maintLinked),
-      });
-    }
-
-    return { items };
+    return {
+      items: rollupOtherExpenseRows(vehicleRows, expenseRows, maintRows),
+    };
   }
 
   static async getSummary(headers: Headers): Promise<OperationalSummary> {
@@ -409,7 +352,10 @@ export abstract class FuelExpensesService {
     const db = getDb();
 
     const [fuelAgg] = await db
-      .select({ total: sql<string>`coalesce(sum(${fuelLogs.costInr}), 0)` })
+      .select({
+        totalCost: sql<string>`coalesce(sum(${fuelLogs.costInr}), 0)`,
+        totalLiters: sql<string>`coalesce(sum(${fuelLogs.liters}), 0)`,
+      })
       .from(fuelLogs);
 
     // Op cost includes all maintenance costs (open + closed) per ADR-044.
@@ -421,15 +367,28 @@ export abstract class FuelExpensesService {
       .select({ total: sql<string>`coalesce(sum(${expenses.amountInr}), 0)` })
       .from(expenses);
 
-    const fuelTotal = Number(fuelAgg?.total ?? 0);
+    const [distanceAgg] = await db
+      .select({
+        totalDistance: sql<string>`coalesce(sum(${trips.actualDistanceKm}), 0)`,
+      })
+      .from(trips)
+      .where(and(eq(trips.status, "completed"), isNull(trips.deletedAt)));
+
+    const fuelTotal = Number(fuelAgg?.totalCost ?? 0);
+    const fuelLiters = Number(fuelAgg?.totalLiters ?? 0);
     const maintenanceTotal = Number(maintAgg?.total ?? 0);
     const expensesTotal = Number(expenseAgg?.total ?? 0);
+    const totalDistance = Number(distanceAgg?.totalDistance ?? 0);
+    const efficiency = computeFuelEfficiencyKmPerL(totalDistance, fuelLiters);
 
     return {
-      fuelTotalInr: moneyToFixed(fuelTotal),
-      maintenanceTotalInr: moneyToFixed(maintenanceTotal),
       expensesTotalInr: moneyToFixed(expensesTotal),
+      fuelEfficiencyKmPerL: efficiencyToFixed(efficiency),
+      fuelTotalInr: moneyToFixed(fuelTotal),
+      fuelTotalLiters: moneyToFixed(fuelLiters),
+      maintenanceTotalInr: moneyToFixed(maintenanceTotal),
       operationalCostInr: moneyToFixed(computeOperationalCostInr(fuelTotal, maintenanceTotal)),
+      totalDistanceKm: moneyToFixed(totalDistance),
     };
   }
 
@@ -475,5 +434,15 @@ export abstract class FuelExpensesService {
       .orderBy(vehicles.registrationNumber);
 
     return { items };
+  }
+
+  /**
+   * Trip picker for fuel/expense forms. FA/FM only — not the full trips module.
+   * Labels: vehicle · date · destination · driver (never raw trip UUIDs).
+   */
+  static async listTripOptions(headers: Headers) {
+    const actor = await requireSessionUser(headers);
+    assertFuelExpenseReadRole(actor.role);
+    return { items: await fetchFuelExpenseTripOptions(getDb()) };
   }
 }

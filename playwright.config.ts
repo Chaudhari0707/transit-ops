@@ -32,7 +32,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
       },
-      testMatch: /(smoke|sign-in|auth-api)\.spec\.ts/,
+      testMatch: /(smoke|sign-in|auth-api|route-protection)\.spec\.ts/,
     },
     {
       name: "chromium-authenticated",
@@ -40,7 +40,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
       },
       dependencies: ["setup"],
-      testMatch: /(?:auth-session|drivers)\.spec\.ts/,
+      testMatch: /(?:auth-session|drivers|session-user|analytics|documents)\.spec\.ts/,
     },
   ],
   webServer: {

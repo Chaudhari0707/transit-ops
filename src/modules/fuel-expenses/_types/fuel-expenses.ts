@@ -30,6 +30,19 @@ export type ExpenseListItem = {
   vehicleRegistration: string;
 };
 
+/** Trip picker for fuel/expense forms — human labels only, no raw UUIDs in UI. */
+export type FuelExpenseTripOption = {
+  destinationName: string;
+  driverName: string;
+  id: string;
+  label: string;
+  status: "dispatched" | "completed";
+  tripDate: string;
+  vehicleId: string;
+  vehicleNameModel: string;
+  vehicleRegistration: string;
+};
+
 export type FuelLogListItem = {
   costInr: string;
   id: number;
@@ -44,9 +57,12 @@ export type FuelLogListItem = {
 
 export type OperationalSummary = {
   expensesTotalInr: string;
+  fuelEfficiencyKmPerL: string | null;
   fuelTotalInr: string;
+  fuelTotalLiters: string;
   maintenanceTotalInr: string;
   operationalCostInr: string;
+  totalDistanceKm: string;
 };
 
 /** Other-expenses row: toll/misc + closed maintenance linked (not stored as expense). */

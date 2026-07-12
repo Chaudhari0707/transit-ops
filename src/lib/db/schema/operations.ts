@@ -163,3 +163,35 @@ export const expenses = pgTable(
     check("expenses_amount_inr_positive", sql`${table.amountInr} > 0`),
   ],
 );
+
+/** Trip-earned income — written only on trip complete (ADR-056). */
+export const revenueLogs = pgTable(
+  "revenue_logs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trips.id),
+    vehicleId: uuid("vehicle_id")
+      .notNull()
+      .references(() => vehicles.id),
+    plannedDistanceKm: numeric("planned_distance_km", { precision: 12, scale: 2 }).notNull(),
+    capacityKg: numeric("capacity_kg", { precision: 12, scale: 2 }).notNull(),
+    rateInrPerKmKg: numeric("rate_inr_per_km_kg", { precision: 12, scale: 4 }).notNull(),
+    amountInr: numeric("amount_inr", { precision: 12, scale: 2 }).notNull(),
+    earnedOn: date("earned_on").notNull(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => user.id),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("revenue_logs_trip_id_unique").on(table.tripId),
+    index("revenue_logs_vehicle_id_earned_on_idx").on(table.vehicleId, table.earnedOn),
+    index("revenue_logs_earned_on_idx").on(table.earnedOn),
+    check("revenue_logs_planned_distance_km_positive", sql`${table.plannedDistanceKm} > 0`),
+    check("revenue_logs_capacity_kg_positive", sql`${table.capacityKg} > 0`),
+    check("revenue_logs_rate_inr_per_km_kg_positive", sql`${table.rateInrPerKmKg} > 0`),
+    check("revenue_logs_amount_inr_positive", sql`${table.amountInr} > 0`),
+  ],
+);

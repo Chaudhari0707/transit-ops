@@ -1,13 +1,13 @@
-import { headers } from "next/headers";
 import { and, asc, eq, isNull } from "drizzle-orm";
 
 import { VehiclesPageClient } from "@/app/dashboard/vehicles/_components/vehicles-page-client";
 import type { VehicleTypeOption } from "@/app/dashboard/vehicles/_types/vehicles-ui";
-import { isUserRole } from "@/lib/auth/_types/user-role";
-import { auth } from "@/lib/auth/better-auth";
+import { AccessDenied } from "@/components/access-denied";
+import { canAccessPageModule } from "@/lib/auth/_lib/sidebar-nav";
+import { requirePageSession } from "@/lib/auth/require-page-session";
 import { getDb } from "@/lib/db/client";
 import { vehicleTypes } from "@/lib/db/schema";
-import { assertCanViewVehicles, canWriteVehicles } from "@/modules/vehicles/_lib/rbac";
+import { canWriteVehicles } from "@/modules/vehicles/_lib/rbac";
 
 async function loadVehicleTypes(): Promise<VehicleTypeOption[]> {
   const rows = await getDb()
@@ -24,28 +24,12 @@ async function loadVehicleTypes(): Promise<VehicleTypeOption[]> {
 }
 
 export default async function VehiclesPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const role = session?.user && "role" in session.user ? session.user.role : null;
+  // Layout already gates session; re-read for role RBAC.
+  const { role } = await requirePageSession("/dashboard/vehicles");
 
-  if (!session?.user || !isUserRole(role)) {
+  if (!canAccessPageModule(role, "vehicles")) {
     return (
-      <div className="px-4 py-10 lg:px-6">
-        <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-          Sign in as Fleet Manager, Dispatcher, or Financial Analyst to view the vehicle registry.
-        </div>
-      </div>
-    );
-  }
-
-  try {
-    assertCanViewVehicles(role);
-  } catch {
-    return (
-      <div className="px-4 py-10 lg:px-6">
-        <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-          Your role does not have access to the vehicle registry.
-        </div>
-      </div>
+      <AccessDenied description="The vehicle registry is available to Fleet Managers, Dispatchers, and Financial Analysts only." />
     );
   }
 
