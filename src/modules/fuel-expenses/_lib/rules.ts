@@ -1,9 +1,10 @@
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import type { UserRole } from "@/lib/auth/_types/user-role";
 
 /** Mockup screen 6 + RBAC: FA writes; FM/FA can view costs. */
 export function assertFuelExpenseReadRole(role: UserRole): void {
   if (role !== "financial_analyst" && role !== "fleet_manager") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
@@ -13,7 +14,7 @@ export function assertFuelExpenseReadRole(role: UserRole): void {
  */
 export function assertFuelExpenseWriteRole(role: UserRole): void {
   if (role !== "financial_analyst" && role !== "fleet_manager") {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
@@ -128,4 +129,32 @@ export function sumMoney(values: ReadonlyArray<number | string>): number {
 
 export function moneyToFixed(value: number): string {
   return (Number.isFinite(value) ? value : 0).toFixed(2);
+}
+
+/**
+ * Fuel efficiency (km/L) — ADR/business rules:
+ * SUM(trip.actual_distance_km) / SUM(fuel_logs.liters)
+ * Returns null when liters ≤ 0.
+ */
+export function computeFuelEfficiencyKmPerL(
+  totalDistanceKm: number,
+  totalFuelLiters: number,
+): number | null {
+  const distance = Number.isFinite(totalDistanceKm) ? Math.max(0, totalDistanceKm) : 0;
+  const liters = Number.isFinite(totalFuelLiters) ? totalFuelLiters : 0;
+
+  if (liters <= 0) {
+    return null;
+  }
+
+  return distance / liters;
+}
+
+export function efficiencyToFixed(value: number | null, digits = 1): string | null {
+  if (value === null || !Number.isFinite(value)) {
+    return null;
+  }
+
+  const factor = 10 ** digits;
+  return (Math.round(value * factor) / factor).toFixed(digits);
 }

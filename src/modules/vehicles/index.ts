@@ -1,17 +1,12 @@
 import { Elysia } from "elysia";
 
-import { errorMessage, resolveErrorCode } from "@/lib/api/errors";
+import { errorMessage, resolveErrorCodeNumber } from "@/lib/api/errors";
 import { VehiclesModel } from "@/modules/vehicles/model";
 import { VehiclesService } from "@/modules/vehicles/service";
 
-const errorResponses = {
-  400: VehiclesModel.errorResponse,
-  401: VehiclesModel.errorResponse,
-  403: VehiclesModel.errorResponse,
-  404: VehiclesModel.errorResponse,
-  409: VehiclesModel.errorResponse,
-  429: VehiclesModel.errorResponse,
-} as const;
+function errorBody(message: string) {
+  return { message };
+}
 
 export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles" })
   .get(
@@ -21,14 +16,25 @@ export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles"
         return await VehiclesService.list(request.headers, query);
       } catch (error) {
         const message = errorMessage(error, "Unable to list vehicles");
-        return status(resolveErrorCode(message), { message });
+        const code = resolveErrorCodeNumber(message);
+        if (code === 401) return status(401, errorBody(message));
+        if (code === 403) return status(403, errorBody(message));
+        if (code === 404) return status(404, errorBody(message));
+        if (code === 409) return status(409, errorBody(message));
+        if (code === 429) return status(429, errorBody(message));
+        return status(400, errorBody(message));
       }
     },
     {
       query: VehiclesModel.listQuery,
       response: {
         200: VehiclesModel.listResponse,
-        ...errorResponses,
+        400: VehiclesModel.errorResponse,
+        401: VehiclesModel.errorResponse,
+        403: VehiclesModel.errorResponse,
+        404: VehiclesModel.errorResponse,
+        409: VehiclesModel.errorResponse,
+        429: VehiclesModel.errorResponse,
       },
     },
   )
@@ -39,14 +45,25 @@ export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles"
         return await VehiclesService.getById(request.headers, params.id);
       } catch (error) {
         const message = errorMessage(error, "Unable to get vehicle");
-        return status(resolveErrorCode(message), { message });
+        const code = resolveErrorCodeNumber(message);
+        if (code === 401) return status(401, errorBody(message));
+        if (code === 403) return status(403, errorBody(message));
+        if (code === 404) return status(404, errorBody(message));
+        if (code === 409) return status(409, errorBody(message));
+        if (code === 429) return status(429, errorBody(message));
+        return status(400, errorBody(message));
       }
     },
     {
       params: VehiclesModel.idParams,
       response: {
         200: VehiclesModel.vehicleResponse,
-        ...errorResponses,
+        400: VehiclesModel.errorResponse,
+        401: VehiclesModel.errorResponse,
+        403: VehiclesModel.errorResponse,
+        404: VehiclesModel.errorResponse,
+        409: VehiclesModel.errorResponse,
+        429: VehiclesModel.errorResponse,
       },
     },
   )
@@ -57,14 +74,25 @@ export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles"
         return await VehiclesService.create(request.headers, body);
       } catch (error) {
         const message = errorMessage(error, "Unable to create vehicle");
-        return status(resolveErrorCode(message), { message });
+        const code = resolveErrorCodeNumber(message);
+        if (code === 401) return status(401, errorBody(message));
+        if (code === 403) return status(403, errorBody(message));
+        if (code === 404) return status(404, errorBody(message));
+        if (code === 409) return status(409, errorBody(message));
+        if (code === 429) return status(429, errorBody(message));
+        return status(400, errorBody(message));
       }
     },
     {
       body: VehiclesModel.createBody,
       response: {
         200: VehiclesModel.vehicleResponse,
-        ...errorResponses,
+        400: VehiclesModel.errorResponse,
+        401: VehiclesModel.errorResponse,
+        403: VehiclesModel.errorResponse,
+        404: VehiclesModel.errorResponse,
+        409: VehiclesModel.errorResponse,
+        429: VehiclesModel.errorResponse,
       },
     },
   )
@@ -75,7 +103,13 @@ export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles"
         return await VehiclesService.update(request.headers, params.id, body);
       } catch (error) {
         const message = errorMessage(error, "Unable to update vehicle");
-        return status(resolveErrorCode(message), { message });
+        const code = resolveErrorCodeNumber(message);
+        if (code === 401) return status(401, errorBody(message));
+        if (code === 403) return status(403, errorBody(message));
+        if (code === 404) return status(404, errorBody(message));
+        if (code === 409) return status(409, errorBody(message));
+        if (code === 429) return status(429, errorBody(message));
+        return status(400, errorBody(message));
       }
     },
     {
@@ -83,7 +117,12 @@ export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles"
       body: VehiclesModel.updateBody,
       response: {
         200: VehiclesModel.vehicleResponse,
-        ...errorResponses,
+        400: VehiclesModel.errorResponse,
+        401: VehiclesModel.errorResponse,
+        403: VehiclesModel.errorResponse,
+        404: VehiclesModel.errorResponse,
+        409: VehiclesModel.errorResponse,
+        429: VehiclesModel.errorResponse,
       },
     },
   )
@@ -94,14 +133,25 @@ export const vehiclesModule = new Elysia({ name: "vehicles", prefix: "/vehicles"
         return await VehiclesService.softDelete(request.headers, params.id);
       } catch (error) {
         const message = errorMessage(error, "Unable to delete vehicle");
-        return status(resolveErrorCode(message), { message });
+        const code = resolveErrorCodeNumber(message);
+        if (code === 401) return status(401, errorBody(message));
+        if (code === 403) return status(403, errorBody(message));
+        if (code === 404) return status(404, errorBody(message));
+        if (code === 409) return status(409, errorBody(message));
+        if (code === 429) return status(429, errorBody(message));
+        return status(400, errorBody(message));
       }
     },
     {
       params: VehiclesModel.idParams,
       response: {
         200: VehiclesModel.deleteResponse,
-        ...errorResponses,
+        400: VehiclesModel.errorResponse,
+        401: VehiclesModel.errorResponse,
+        403: VehiclesModel.errorResponse,
+        404: VehiclesModel.errorResponse,
+        409: VehiclesModel.errorResponse,
+        429: VehiclesModel.errorResponse,
       },
     },
   );

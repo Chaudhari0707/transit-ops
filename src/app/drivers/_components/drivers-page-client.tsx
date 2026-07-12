@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DriverForm } from "@/app/drivers/_components/driver-form";
@@ -28,6 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  isUnauthorizedErrorMessage,
+  SESSION_EXPIRED_TOAST,
+  toUserFacingApiError,
+} from "@/lib/api/http-errors";
 
 const emptyForm: DriverFormState = {
   fullName: "",
@@ -40,13 +44,16 @@ const emptyForm: DriverFormState = {
   notes: "",
 };
 
-function isUnauthorizedMessage(message: string): boolean {
-  const lower = message.toLowerCase();
-  return lower.includes("unauthorized") || lower.includes("request failed (401)");
+function handleClientApiError(message: string): void {
+  if (isUnauthorizedErrorMessage(message)) {
+    toast.error(SESSION_EXPIRED_TOAST);
+    window.location.assign("/sign-in");
+    return;
+  }
+  toast.error(toUserFacingApiError(message));
 }
 
 export function DriversPageClient({ canWrite }: DriversPageClientProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [drivers, setDrivers] = useState<DriverUi[]>([]);
   const [categories, setCategories] = useState<LicenseCategoryOption[]>([]);
@@ -79,19 +86,11 @@ export function DriversPageClient({ canWrite }: DriversPageClientProps) {
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load drivers";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      if (message === "Forbidden") {
-        toast.error("Drivers module requires Fleet Manager or Safety Officer.");
-      } else {
-        toast.error(message);
-      }
+      handleClientApiError(message);
     } finally {
       setLoading(false);
     }
-  }, [complianceFilter, router, search, statusFilter]);
+  }, [complianceFilter, search, statusFilter]);
 
   useEffect(() => {
     void loadAll();
@@ -140,11 +139,7 @@ export function DriversPageClient({ canWrite }: DriversPageClientProps) {
       await loadAll();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Save failed";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setSubmitting(false);
     }
@@ -164,11 +159,7 @@ export function DriversPageClient({ canWrite }: DriversPageClientProps) {
       await loadAll();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Delete failed";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setDeletingId(null);
     }

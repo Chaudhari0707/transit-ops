@@ -1,6 +1,6 @@
 # 10 — Notifications (license expiry cron)
 
-**Ticket:** ODO-40 · **ADR:** ADR-056
+**Ticket:** ODO-40 · **ADR:** ADR-059
 
 ## Purpose
 

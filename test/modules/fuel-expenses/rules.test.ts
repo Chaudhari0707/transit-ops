@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import {
   assertAllowedExpenseCategoryCode,
   assertFuelExpenseReadRole,
   assertFuelExpenseWriteRole,
+  computeFuelEfficiencyKmPerL,
   computeOperationalCostInr,
   normalizePositiveAmount,
   normalizePositiveLiters,
@@ -12,7 +14,7 @@ import {
 
 describe("assertFuelExpenseReadRole", () => {
   test("rejects dispatcher", () => {
-    expect(() => assertFuelExpenseReadRole("dispatcher")).toThrow("Forbidden");
+    expect(() => assertFuelExpenseReadRole("dispatcher")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows finance and fleet manager", () => {
@@ -23,7 +25,7 @@ describe("assertFuelExpenseReadRole", () => {
 
 describe("assertFuelExpenseWriteRole", () => {
   test("rejects safety officer", () => {
-    expect(() => assertFuelExpenseWriteRole("safety_officer")).toThrow("Forbidden");
+    expect(() => assertFuelExpenseWriteRole("safety_officer")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("allows finance", () => {
@@ -74,5 +76,15 @@ describe("normalize failure modes", () => {
     expect(() => normalizePositiveAmount(0, "amountInr")).toThrow(
       "amountInr must be greater than 0",
     );
+  });
+});
+
+describe("computeFuelEfficiencyKmPerL", () => {
+  test("computes km per liter", () => {
+    expect(computeFuelEfficiencyKmPerL(420, 50)).toBe(8.4);
+  });
+
+  test("returns null without liters", () => {
+    expect(computeFuelEfficiencyKmPerL(100, 0)).toBeNull();
   });
 });

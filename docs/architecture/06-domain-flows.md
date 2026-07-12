@@ -8,11 +8,12 @@ Aligned with Excalidraw mockup screens 0–8.
 2. **Fleet Manager** (or Safety) registers driver `Alex` with valid license, status `available`.
 3. **Dispatcher** creates trip: source location `Gandhinagar Depot`, destination `Ahmedabad Hub` (from `GET /api/locations`), vehicle + driver from assignable pools (`GET /api/trips/assignables/vehicles`, `GET /api/trips/assignables/drivers`), cargo 450 kg, planned distance. Status `draft`. Source ≠ destination enforced.
 4. **Dispatcher** dispatches: system checks 450 ≤ 500, license valid, both available → trip `dispatched`, vehicle+driver `on_trip`, snapshot `start_odometer_km`.
-5. **Dispatcher** completes (see Flow H) → odometer + fuel_log + expenses logged → trip `completed`, vehicle+driver Available.
+5. **Dispatcher** completes (see Flow H) → odometer + fuel_log + expenses + **revenue_log** → trip `completed`, vehicle+driver Available.
 6. **Fleet Manager** opens maintenance (oil change) → vehicle `in_shop`, hidden from dispatch.
 7. **Fleet Manager** closes maintenance → vehicle `available`.
-8. **Financial Analyst** sees operational cost = **fuel + maintenance**; tolls under other expenses.
-9. Dashboard KPIs refresh (filters: vehicle type + status only).
+8. **Financial Analyst** sees operational cost = **fuel + maintenance**; tolls under other expenses; **trip revenue** on `revenue_logs`.
+9. **Reports** show monthly revenue chart + vehicle ROI (revenue − op cost) / acquisition cost.
+10. Dashboard KPIs refresh (filters: vehicle type + status only).
 
 ## Flow B — Validation failures
 
@@ -55,27 +56,35 @@ Aligned with Excalidraw mockup screens 0–8.
 
 ## Flow G — Dashboard KPIs
 
-- Active vehicles = non-retired count.
-- Operational cost (analytics) = fuel + maintenance.
-- Filters: type + status. **No region filter.**
-- ROI / monthly revenue: **static placeholders** for demo.
+API: `GET /api/dashboard/kpis`, `GET /api/dashboard/recent-trips` (module `dashboard`). All authenticated roles (ADR-031).
 
-## Flow H — Trip complete sequence (final — ADR-053)
+- Active vehicles = non-retired count (`available + on_trip + in_shop`).
+- Available vehicles / vehicles in maintenance (`in_shop`).
+- Active trips = `dispatched`; pending trips = `draft`.
+- Drivers on duty = drivers with status `on_trip`.
+- Fleet utilization % = `on_trip / (available + on_trip + in_shop) × 100`.
+- Vehicle status breakdown (for chart): available / on_trip / in_shop / retired counts.
+- **Recent trips filters** (vehicle type + trip status only — **no region**): apply only to the recent trips list, not KPIs.
+- Operational cost / monthly revenue / vehicle ROI (reports analytics): fuel + maintenance + `revenue_logs` (ADR-044/056) on `/analytics` — not static placeholders.
 
-Mockup: _“On Complete: odometer → fuel log → expenses → Vehicle & Driver Available”_
+## Flow H — Trip complete sequence (final — ADR-053 + ADR-056)
 
-All of this happens in **one complete action** (one API transaction). Expenses are **required here** (counted and written to the expenses log table at complete time — not deferred).
+Mockup: _“On Complete: odometer → fuel log → expenses → Vehicle & Driver Available”_  
+**Extended:** auto **revenue_log** after expenses (transport company income for the trip).
+
+All of this happens in **one complete action** (one API transaction). Expenses are **required here** (counted and written to the expenses log table at complete time — not deferred). Revenue is **always auto-computed** (no form fields).
 
 | Step                                   | What happens                                                                                                                                                          | Who        | Data                 |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------- |
 | **1. Odometer**                        | Enter **final odometer** (≥ start / current). Set `end_odometer_km`, `actual_distance_km = end − start`. Update `vehicles.odometer_km`.                               | Dispatcher | `trips`, `vehicles`  |
 | **2. Fuel log**                        | Enter **liters + fuel cost (INR)**. Insert **`fuel_logs`** with `trip_id` + `vehicle_id` (and mirror fields on trip if useful).                                       | Dispatcher | `fuel_logs`, `trips` |
 | **3. Expenses (required on complete)** | Enter trip expenses (toll / misc as applicable). **Insert `expenses` log row(s)** with `trip_id` + `vehicle_id`. Maintenance is still **not** stored as expense rows. | Dispatcher | `expenses`           |
-| **4. Complete + free resources**       | Trip status → **`completed`**. Vehicle status → **`available`**. Driver status → **`available`**. They can take another trip.                                         | System     | status fields        |
+| **4. Revenue log (auto)**              | Compute `planned_km × capacity_kg × rate`. **Insert `revenue_logs`** (unique `trip_id`) with input snapshots + `amount_inr` + `earned_on`.                            | System     | `revenue_logs`       |
+| **5. Complete + free resources**       | Trip status → **`completed`**. Vehicle status → **`available`**. Driver status → **`available`**. They can take another trip.                                         | System     | status fields        |
 
-**Atomic rule:** if any of steps 1–4 fails, **rollback all** — no half-completed trip, no orphaned fuel/expense rows, vehicle/driver stay `on_trip`.
+**Atomic rule:** if any of steps 1–5 fails, **rollback all** — no half-completed trip, no orphaned fuel/expense/revenue rows, vehicle/driver stay `on_trip`.
 
-**Why this order:** distance first → fuel for efficiency/op cost → expenses logged against the trip → only then free fleet for the next round.
+**Why this order:** distance first → fuel for efficiency/op cost → expenses logged against the trip → revenue earned for the trip → only then free fleet for the next round.
 
 ### Regions
 

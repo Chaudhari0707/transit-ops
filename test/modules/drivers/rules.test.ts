@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import {
   assertDriverReadRole,
   assertDriverWriteRole,
@@ -14,11 +15,11 @@ import {
 
 describe("RBAC", () => {
   test("dispatcher cannot read driver admin", () => {
-    expect(() => assertDriverReadRole("dispatcher")).toThrow("Forbidden");
+    expect(() => assertDriverReadRole("dispatcher")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("finance cannot write drivers", () => {
-    expect(() => assertDriverWriteRole("financial_analyst")).toThrow("Forbidden");
+    expect(() => assertDriverWriteRole("financial_analyst")).toThrow(FORBIDDEN_MESSAGE);
   });
 
   test("fleet and safety can write", () => {

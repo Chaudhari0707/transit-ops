@@ -1,3 +1,8 @@
+export type TripDriverSummary = {
+  fullName: string;
+  id: string;
+};
+
 export type TripLocationSummary = {
   code: string;
   id: string;
@@ -14,6 +19,7 @@ export type TripRecord = {
   createdByUserId: string;
   destinationLocation: TripLocationSummary;
   dispatchedAt: string | null;
+  driver: TripDriverSummary;
   driverId: string;
   endOdometerKm: string | null;
   fuelConsumedLiters: string | null;
@@ -24,7 +30,15 @@ export type TripRecord = {
   startOdometerKm: string | null;
   status: TripStatus;
   updatedAt: string;
+  vehicle: TripVehicleSummary;
   vehicleId: string;
 };
 
 export type TripStatus = "draft" | "dispatched" | "completed" | "cancelled";
+
+export type TripVehicleSummary = {
+  id: string;
+  maxLoadCapacityKg: string;
+  nameModel: string;
+  registrationNumber: string;
+};

@@ -7,7 +7,7 @@
 | ------------ | ------------------------------------------------------------ |
 | **Provider** | [resend.com](https://resend.com) only (no nodemailer / SMTP) |
 | **Code**     | `src/lib/email/_lib/resend-client.ts`                        |
-| **Tickets**  | ODO-40, ODO-51 · ADR-056                                     |
+| **Tickets**  | ODO-40, ODO-51 · ADR-059                                     |
 
 ---
 

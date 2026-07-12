@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { BellIcon, CirclePlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,27 +13,47 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+const OPEN_NEW_TRIP_EVENT = "transitops:open-new-trip";
+
 export function NavMain({
   items,
+  showNewTrip = false,
 }: {
   items: {
     title: string;
     url: string;
     icon?: React.ReactNode;
   }[];
+  /** Trip write role only (dispatcher). */
+  showNewTrip?: boolean;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  function handleNewTrip() {
+    if (pathname === "/trips") {
+      window.dispatchEvent(new CustomEvent(OPEN_NEW_TRIP_EVENT));
+      return;
+    }
+
+    router.push("/trips?new=1");
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              tooltip="New Trip"
-              className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-            >
-              <CirclePlusIcon />
-              <span>New Trip</span>
-            </SidebarMenuButton>
+            {showNewTrip ? (
+              <SidebarMenuButton
+                tooltip="New Trip"
+                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                onClick={handleNewTrip}
+              >
+                <CirclePlusIcon />
+                <span>New Trip</span>
+              </SidebarMenuButton>
+            ) : null}
             <Button
               size="icon"
               className="size-8 group-data-[collapsible=icon]:opacity-0"

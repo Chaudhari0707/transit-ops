@@ -9,10 +9,34 @@
 - DRY + reusability are core. Search for existing modules, hooks, utilities, and schemas before creating new ones.
 - `page.tsx` = orchestration only → extract to `_components/*-page-client.tsx`.
 - Form schemas → `_lib/*-schema.ts`. Transforms → `_lib/*-helpers.ts`.
-- Exported types → `_types/` directories (enforced by lint). Do not export types from runtime source files.
 - Route-specific extractions → colocate under `src/app/<route>/_components` and `src/app/<route>/_types`.
 - Arch/API/schema changes → update `docs/` + nearest `AGENTS.md` in the same task.
 - **New APIs (mandatory):** follow `.agents/api-standards.md` — module layout, TypeBox models, error map, auth/ownership, and **failure-first** tests under `test/modules/**`. Never ship happy-path-only API tests.
+
+## Hard gates (do not regress)
+
+These failed pre-commit in production. **Never reintroduce them.**
+
+### Exported types location (`local/no-exported-types-in-source`)
+
+- **Never** `export type` / `export interface` from runtime source files (`_lib/`, `index.ts`, `service.ts`, `model.ts`, components, pages).
+- **Always** put exported types in a colocated `_types/` directory (e.g. `src/lib/auth/_types/…`, `src/modules/<domain>/_types/…`, `src/app/<route>/_types/…`).
+- Runtime modules **import** types from `_types/`; they do not re-export them.
+- Type declarations in `_types/` must stay alphabetically ordered (`local/sort-types-and-keys`).
+
+### Elysia HTTP errors (`typecheck` + real status codes)
+
+- **Never** return `new Response(JSON.stringify(…), { status })` from Elysia route handlers for domain errors. That infers `Promise<Response | T>` and **fails `tsc`**, and string status codes have also returned HTTP 200.
+- **Always** use context `status(numericCode, { message })` with **explicit** numeric branches (`status(401, …)`, `status(403, …)`, …) — copy `src/modules/drivers/index.ts` / `src/modules/vehicles/index.ts`.
+- Prefer `errorMessage` + `resolveErrorCodeNumber` then `if (code === 401) return status(401, …)` (not a single `status(resolveErrorCode(…))` call that widens to string codes and breaks SelectiveStatus).
+- Service throws: use shared messages from `src/lib/api/http-errors.ts` (`UNAUTHORIZED_MESSAGE`, `FORBIDDEN_MESSAGE`); `resolveErrorCode*` still maps legacy `"Unauthorized"` / `"Forbidden"` and friendly phrases.
+- Run `bun run typecheck` on any controller change before claiming done.
+
+### Auth UX / RBAC (dashboard)
+
+- Dashboard and domain app routes are gated by `src/proxy.ts` + `requirePageSession` — **do not** embed `LoginForm` or soft-navigate into a sign-in UI inside the app shell.
+- Sidebar nav is role-filtered via `src/lib/auth/_lib/sidebar-nav.ts` (RBAC matrix). Do not hardcode full nav for every role.
+- On 401 in page clients: toast session-expired + hard `window.location.assign("/sign-in")`. On 403: user-facing copy via `toUserFacingApiError`, never raw `"Forbidden"`.
 
 ## Authentication
 

@@ -1,3 +1,4 @@
+import { FORBIDDEN_MESSAGE } from "@/lib/api/http-errors";
 import type { UserRole } from "@/lib/auth/_types/user-role";
 
 /** Fleet RBAC for vehicles (docs/architecture/05-rbac-matrix.md). */
@@ -12,12 +13,12 @@ export function canWriteVehicles(role: UserRole): boolean {
 
 export function assertCanViewVehicles(role: UserRole): void {
   if (!canViewVehicles(role)) {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }
 
 export function assertCanWriteVehicles(role: UserRole): void {
   if (!canWriteVehicles(role)) {
-    throw new Error("Forbidden");
+    throw new Error(FORBIDDEN_MESSAGE);
   }
 }

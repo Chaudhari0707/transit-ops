@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { FuelExpenseForms } from "@/app/fuel-expenses/_components/fuel-expense-forms";
@@ -27,6 +26,11 @@ import type {
   VehicleOption,
 } from "@/app/fuel-expenses/_types/fuel-expenses-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  isUnauthorizedErrorMessage,
+  SESSION_EXPIRED_TOAST,
+  toUserFacingApiError,
+} from "@/lib/api/http-errors";
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -61,13 +65,16 @@ const emptyExpense: ExpenseFormState = {
   description: "",
 };
 
-function isUnauthorizedMessage(message: string): boolean {
-  const lower = message.toLowerCase();
-  return lower.includes("unauthorized") || lower.includes("request failed (401)");
+function handleClientApiError(message: string): void {
+  if (isUnauthorizedErrorMessage(message)) {
+    toast.error(SESSION_EXPIRED_TOAST);
+    window.location.assign("/sign-in");
+    return;
+  }
+  toast.error(toUserFacingApiError(message));
 }
 
 export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<FuelLogUi[]>([]);
   const [otherRows, setOtherRows] = useState<OtherExpenseRowUi[]>([]);
@@ -109,16 +116,11 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load fuel & expenses";
-
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     void loadAll();
@@ -138,11 +140,7 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
       await loadAll();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to log fuel";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setSubmittingFuel(false);
     }
@@ -163,11 +161,7 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
       await loadAll();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to add expense";
-      if (isUnauthorizedMessage(message)) {
-        router.replace("/sign-in");
-        return;
-      }
-      toast.error(message);
+      handleClientApiError(message);
     } finally {
       setSubmittingExpense(false);
     }
@@ -187,7 +181,7 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end justify-between gap-4">
-            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
               <div>
                 <div className="text-muted-foreground">Fuel</div>
                 <div className="font-semibold tabular-nums">{formatInr(summary.fuelTotalInr)}</div>
@@ -202,6 +196,12 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
                 <div className="text-muted-foreground">Toll / misc</div>
                 <div className="font-semibold tabular-nums">
                   {formatInr(summary.expensesTotalInr)}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Fuel efficiency</div>
+                <div className="font-semibold tabular-nums">
+                  {summary.fuelEfficiencyKmPerL ? `${summary.fuelEfficiencyKmPerL} km/L` : "—"}
                 </div>
               </div>
               <div>
