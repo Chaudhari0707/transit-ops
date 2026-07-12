@@ -20,19 +20,7 @@ All other categorizations → **master tables**.
 
 ## 2.2 Master / config tables
 
-### `regions`
-
-| Column     | Type         | Null | Default           | Notes                                 |
-| ---------- | ------------ | ---- | ----------------- | ------------------------------------- |
-| id         | uuid         | NO   | gen_random_uuid() | **PK**                                |
-| code       | varchar(32)  | NO   |                   | Unique business code e.g. `WEST-01`   |
-| name       | varchar(120) | NO   |                   | Display name                          |
-| is_active  | boolean      | NO   | true              | Inactive hidden from new trip selects |
-| created_at | timestamptz  | NO   | now()             |                                       |
-| updated_at | timestamptz  | NO   | now()             |                                       |
-| deleted_at | timestamptz  | YES  | null              | Soft delete                           |
-
-**Indexes/constraints:** `UNIQUE(code)` WHERE deleted_at IS NULL; index `(is_active)`.
+> **No `regions` table** (ADR-043). Trip endpoints are free text.
 
 ### `vehicle_types`
 
@@ -66,7 +54,8 @@ All other categorizations → **master tables**.
 | is_active                            | boolean      | NO   | true              |                             |
 | created_at / updated_at / deleted_at |              |      |                   |                             |
 
-**Note:** Do **not** put fuel or maintenance categories here for operational-cost rollups — those live in `fuel_logs` / `maintenance_logs` to avoid double counting (ADR-019).
+**Note:** Expense categories = **toll / fine / misc only**. Do **not** store maintenance as expense rows.  
+**Operational cost** = fuel + maintenance (ADR-044). Maintenance costs live only on `maintenance_logs`; UI may **link/display** them next to other expenses (ADR-045).
 
 ### `maintenance_types`
 
@@ -80,42 +69,112 @@ All other categorizations → **master tables**.
 
 ---
 
-## 2.3 Identity & access
+## 2.3 Identity & access — **Better Auth** (ADR-036)
 
-### `users`
+Auth is **Better Auth** with Drizzle + Postgres.  
+Reference: [Database](https://better-auth.com/docs/concepts/database), [Session management](https://better-auth.com/docs/concepts/session-management).
 
-Replaces scaffold `admin_users`.
+Replaces scaffold `admin_users`. Do **not** invent a parallel custom password table.
 
-| Column             | Type         | Null | Default           | Notes                            |
-| ------------------ | ------------ | ---- | ----------------- | -------------------------------- |
-| id                 | uuid         | NO   | gen_random_uuid() | **PK**                           |
-| email              | varchar(254) | NO   |                   | Login identity; unique           |
-| password_hash      | text         | NO   |                   |                                  |
-| full_name          | varchar(160) | NO   |                   |                                  |
-| phone_number       | varchar(32)  | YES  | null              | Optional                         |
-| role               | user_role    | NO   |                   | Exactly one role                 |
-| is_active          | boolean      | NO   | true              | Inactive cannot login            |
-| last_login_at      | timestamptz  | YES  | null              |                                  |
-| created_at         | timestamptz  | NO   | now()             |                                  |
-| updated_at         | timestamptz  | NO   | now()             |                                  |
-| deleted_at         | timestamptz  | YES  | null              | Soft delete                      |
-| created_by_user_id | uuid         | YES  | null              | **FK → users.id**; null for seed |
+**Strategy:** Better Auth **core schema** + `user.additionalFields` for TransitOps RBAC.  
+Password is stored on **`account.password`** (credential provider), **not** on `user`.  
+Sessions: **cookie-based**; session rows live in DB `session` table by default.
 
-**Indexes:** unique email (non-deleted); index `(role)`; index `(is_active)`.
+### `user` (Better Auth core + additional fields)
 
-**Auth rules:** only `is_active = true` AND `deleted_at IS NULL` may authenticate.
+| Column                 | Type        | Null | Notes                                                                       |
+| ---------------------- | ----------- | ---- | --------------------------------------------------------------------------- |
+| id                     | text/uuid   | NO   | **PK** (Better Auth string id; generate uuid)                               |
+| name                   | text        | NO   | Display name (maps from product “full name”)                                |
+| email                  | text        | NO   | Unique login identity                                                       |
+| email_verified         | boolean     | NO   | Better Auth core                                                            |
+| image                  | text        | YES  | Optional avatar URL                                                         |
+| created_at             | timestamptz | NO   | Core                                                                        |
+| updated_at             | timestamptz | NO   | Core                                                                        |
+| **role**               | user_role   | NO   | **additionalField** — exactly one app role; `input: false` on public signup |
+| **phone_number**       | varchar(32) | YES  | **additionalField** optional                                                |
+| **is_active**          | boolean     | NO   | **additionalField** default true; inactive cannot use app                   |
+| **deleted_at**         | timestamptz | YES  | **additionalField** soft-disable; optional                                  |
+| **created_by_user_id** | text        | YES  | **additionalField** FK → user.id (null for seed)                            |
 
-### Sessions (implementation choice at code time)
+**Indexes:** unique email; index `(role)`; index `(is_active)`.
 
-Not fully prescribed: either signed JWT/cookie without table, or `sessions` table if server-side sessions preferred. If table:
+**Auth rules:** session valid only if user `is_active = true` and `deleted_at IS NULL` (enforce via Better Auth hooks / app middleware).
 
-| Column     | Type          | Notes |
-| ---------- | ------------- | ----- |
-| id         | uuid PK       |       |
-| user_id    | uuid FK users |       |
-| token_hash | text          |       |
-| expires_at | timestamptz   |       |
-| created_at | timestamptz   |       |
+### `session` (Better Auth core)
+
+| Column     | Type        | Null | Notes                              |
+| ---------- | ----------- | ---- | ---------------------------------- |
+| id         | text        | NO   | **PK**                             |
+| user_id    | text        | NO   | **FK → user.id** ON DELETE CASCADE |
+| token      | text        | NO   | Unique session token (cookie)      |
+| expires_at | timestamptz | NO   | Default ~7d; refresh via updateAge |
+| ip_address | text        | YES  |                                    |
+| user_agent | text        | YES  |                                    |
+| created_at | timestamptz | NO   |                                    |
+| updated_at | timestamptz | NO   |                                    |
+
+### `account` (Better Auth core — password lives here)
+
+| Column                           | Type        | Null | Notes                                |
+| -------------------------------- | ----------- | ---- | ------------------------------------ |
+| id                               | text        | NO   | **PK**                               |
+| user_id                          | text        | NO   | **FK → user.id** CASCADE             |
+| account_id                       | text        | NO   | For credential = user id             |
+| provider_id                      | text        | NO   | e.g. `credential` for email/password |
+| password                         | text        | YES  | Hashed password for email/password   |
+| access_token / refresh_token / … | text/date   | YES  | OAuth fields (unused v1)             |
+| created_at / updated_at          | timestamptz | NO   |                                      |
+
+### `verification` (Better Auth core)
+
+| Column                  | Type        | Null | Notes       |
+| ----------------------- | ----------- | ---- | ----------- |
+| id                      | text        | NO   | **PK**      |
+| identifier              | text        | NO   | e.g. email  |
+| value                   | text        | NO   | token/value |
+| expires_at              | timestamptz | NO   |             |
+| created_at / updated_at | timestamptz |      |             |
+
+### Login UX (mockup) — role dropdown (ADR-047)
+
+Login form fields: **email**, **password**, **role** (dropdown of four roles).
+
+Server rules:
+
+1. Authenticate email/password via Better Auth.
+2. Load `user.role`.
+3. If selected role ≠ `user.role` → reject (403 / invalid credentials style message). User does **not** switch roles at login; dropdown is a confirmation/selector matching their assigned role.
+4. Optional UX: after email lookup, pre-select role (still validate).
+
+### Failed login lockout (ADR-051)
+
+Mockup: _“Account locked after 5 failed attempts.”_
+
+Configure **Better Auth rate limiting** ([docs](https://better-auth.com/docs/concepts/rate-limit)):
+
+```ts
+rateLimit: {
+  enabled: true,
+  storage: "database", // preferred for multi-instance
+  customRules: {
+    "/sign-in/email": {
+      window: 15 * 60, // 15 minutes (tune as needed)
+      max: 5,          // 5 attempts then blocked until window resets
+    },
+  },
+}
+```
+
+UI on 429: show lockout message + `X-Retry-After`.  
+Optional table: Better Auth `rateLimit` when `storage: "database"`.
+
+### Implementation notes
+
+- Use `auth generate` with Drizzle adapter so schema stays aligned with Better Auth version.
+- Map domain FKs (`created_by_user_id`, `drivers.user_id`) → `user.id`.
+- Prefer Better Auth default table names unless remapped.
+- No public self-signup; Fleet Manager / seed creates users with role set server-side (`additionalFields.role`, `input: false` on client signup).
 
 ---
 
@@ -135,7 +194,7 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 | status                               | vehicle_status | NO   | `available`       |                                                |
 | notes                                | text           | YES  | null              |                                                |
 | created_at / updated_at / deleted_at |                |      |                   |                                                |
-| created_by_user_id                   | uuid           | YES  |                   | **FK → users.id**                              |
+| created_by_user_id                   | uuid           | YES  |                   | **FK → user.id**                               |
 
 **Indexes:** unique `registration_number` WHERE deleted_at IS NULL; index `(status)`; index `(vehicle_type_id)`.
 
@@ -143,20 +202,24 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 
 ### `drivers`
 
-| Column                               | Type          | Null | Default           | Notes                                          |
-| ------------------------------------ | ------------- | ---- | ----------------- | ---------------------------------------------- |
-| id                                   | uuid          | NO   | gen_random_uuid() | **PK**                                         |
-| full_name                            | varchar(160)  | NO   |                   |                                                |
-| license_number                       | varchar(64)   | NO   |                   | Unique among non-deleted                       |
-| license_category_id                  | uuid          | NO   |                   | **FK → license_categories.id**                 |
-| license_expiry_date                  | date          | NO   |                   | Assign blocked if < current_date               |
-| contact_number                       | varchar(32)   | NO   |                   |                                                |
-| safety_score                         | smallint      | NO   | 100               | 0–100; Safety Officer edits                    |
-| status                               | driver_status | NO   | `available`       |                                                |
-| user_id                              | uuid          | YES  | null              | **FK → users.id**, UNIQUE; optional login link |
-| notes                                | text          | YES  | null              |                                                |
-| created_at / updated_at / deleted_at |               |      |                   |                                                |
-| created_by_user_id                   | uuid          | YES  |                   | **FK → users.id**                              |
+| Column                               | Type          | Null | Default           | Notes                                         |
+| ------------------------------------ | ------------- | ---- | ----------------- | --------------------------------------------- |
+| id                                   | uuid          | NO   | gen_random_uuid() | **PK**                                        |
+| full_name                            | varchar(160)  | NO   |                   |                                               |
+| license_number                       | varchar(64)   | NO   |                   | Unique among non-deleted                      |
+| license_category_id                  | uuid          | NO   |                   | **FK → license_categories.id**                |
+| license_expiry_date                  | date          | NO   |                   | Assign blocked if < current_date              |
+| contact_number                       | varchar(32)   | NO   |                   |                                               |
+| safety_score                         | smallint      | NO   | 100               | 0–100; FM + Safety edit                       |
+| status                               | driver_status | NO   | `available`       |                                               |
+| user_id                              | uuid          | YES  | null              | **FK → user.id**, UNIQUE; optional login link |
+| notes                                | text          | YES  | null              |                                               |
+| created_at / updated_at / deleted_at |               |      |                   |                                               |
+| created_by_user_id                   | uuid          | YES  |                   | **FK → user.id**                              |
+
+**No `trip_completion_pct` column** (ADR-049).  
+**Compute on the fly** after drivers list/detail API (in API response and/or frontend):  
+`completed_count / assigned_count * 100` from `trips` (e.g. Alex 48 completed of 50 assigned → **96%**). Never persist this percentage.
 
 **Indexes:** unique `license_number` WHERE deleted_at IS NULL; unique `user_id` WHERE user_id IS NOT NULL; index `(status)`; index `(license_expiry_date)`.
 
@@ -172,8 +235,8 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 | ------------------------------------ | ------------- | ---- | ----------------- | ----------------------------------------- |
 | id                                   | uuid          | NO   | gen_random_uuid() | **PK**                                    |
 | status                               | trip_status   | NO   | `draft`           |                                           |
-| source_region_id                     | uuid          | NO   |                   | **FK → regions.id**                       |
-| destination_region_id                | uuid          | NO   |                   | **FK → regions.id**                       |
+| source                               | varchar(255)  | NO   |                   | Free text e.g. `Gandhinagar Depot`        |
+| destination                          | varchar(255)  | NO   |                   | Free text e.g. `Ahmedabad Hub`            |
 | vehicle_id                           | uuid          | NO   |                   | **FK → vehicles.id**                      |
 | driver_id                            | uuid          | NO   |                   | **FK → drivers.id**                       |
 | cargo_weight_kg                      | numeric(12,2) | NO   |                   | > 0; ≤ vehicle capacity on dispatch       |
@@ -187,10 +250,10 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 | completed_at                         | timestamptz   | YES  | null              |                                           |
 | cancelled_at                         | timestamptz   | YES  | null              |                                           |
 | cancel_reason                        | text          | YES  | null              | Recommended when cancelled                |
-| created_by_user_id                   | uuid          | NO   |                   | **FK → users.id** (dispatcher)            |
+| created_by_user_id                   | uuid          | NO   |                   | **FK → user.id** (dispatcher)             |
 | created_at / updated_at / deleted_at |               |      |                   |                                           |
 
-**Indexes:** `(status)`; `(vehicle_id, status)`; `(driver_id, status)`; `(source_region_id)`; `(destination_region_id)`; `(dispatched_at)`; `(completed_at)`.
+**Indexes:** `(status)`; `(vehicle_id, status)`; `(driver_id, status)`; `(dispatched_at)`; `(completed_at)`.
 
 **Partial unique (concurrency safety — recommended):**
 
@@ -200,6 +263,8 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
   `UNIQUE(driver_id) WHERE status = 'dispatched' AND deleted_at IS NULL`
 
 **Checks:** cargo/planned_distance > 0; on complete end_odometer ≥ start_odometer.
+
+**Complete contract (ADR-053):** same transaction must write `fuel_logs` + one or more `expenses` rows (with `trip_id`) then set trip completed and free vehicle/driver.
 
 ---
 
@@ -220,7 +285,7 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 | next_due_odometer_km   | numeric(12,1)      | YES  | null    |                                 |
 | started_at             | timestamptz        | NO   | now()   |                                 |
 | completed_at           | timestamptz        | YES  | null    | Set when closed                 |
-| created_by_user_id     | uuid               | NO   |         | **FK → users.id**               |
+| created_by_user_id     | uuid               | NO   |         | **FK → user.id**                |
 | created_at             | timestamptz        | NO   | now()   |                                 |
 | updated_at             | timestamptz        | NO   | now()   |                                 |
 
@@ -246,7 +311,7 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 | cost_inr           | numeric(12,2) | NO   |         | ≥ 0                                                  |
 | logged_at          | date          | NO   |         | Fuel date                                            |
 | notes              | text          | YES  | null    |                                                      |
-| created_by_user_id | uuid          | NO   |         | **FK → users.id**                                    |
+| created_by_user_id | uuid          | NO   |         | **FK → user.id**                                     |
 | created_at         | timestamptz   | NO   | now()   |                                                      |
 | updated_at         | timestamptz   | NO   | now()   |                                                      |
 
@@ -254,21 +319,26 @@ Not fully prescribed: either signed JWT/cookie without table, or `sessions` tabl
 
 ### `expenses` (PK bigserial)
 
-Non-maintenance, non-fuel operational costs (tolls, fines, misc).
+**Toll / fine / misc only** — never insert maintenance rows here (ADR-045).
 
-| Column                  | Type          | Null | Default | Notes                          |
-| ----------------------- | ------------- | ---- | ------- | ------------------------------ |
-| id                      | bigserial     | NO   |         | **PK**                         |
-| vehicle_id              | uuid          | NO   |         | **FK → vehicles.id**           |
-| expense_category_id     | uuid          | NO   |         | **FK → expense_categories.id** |
-| trip_id                 | uuid          | YES  | null    | **FK → trips.id** optional     |
-| amount_inr              | numeric(12,2) | NO   |         | > 0                            |
-| incurred_on             | date          | NO   |         |                                |
-| description             | text          | YES  | null    |                                |
-| created_by_user_id      | uuid          | NO   |         | **FK → users.id**              |
-| created_at / updated_at | timestamptz   | NO   | now()   |                                |
+| Column                  | Type          | Null | Default | Notes                                                                                                  |
+| ----------------------- | ------------- | ---- | ------- | ------------------------------------------------------------------------------------------------------ |
+| id                      | bigserial     | NO   |         | **PK**                                                                                                 |
+| vehicle_id              | uuid          | NO   |         | **FK → vehicles.id**                                                                                   |
+| expense_category_id     | uuid          | NO   |         | **FK → expense_categories.id**                                                                         |
+| trip_id                 | uuid          | YES  | null    | **FK → trips.id**; **required when written at trip complete** (null only for non-trip manual expenses) |
+| amount_inr              | numeric(12,2) | NO   |         | > 0                                                                                                    |
+| incurred_on             | date          | NO   |         |                                                                                                        |
+| description             | text          | YES  | null    |                                                                                                        |
+| created_by_user_id      | uuid          | NO   |         | **FK → user.id**                                                                                       |
+| created_at / updated_at | timestamptz   | NO   | now()   |                                                                                                        |
 
-**Indexes:** `(vehicle_id, incurred_on)`; `(expense_category_id)`.
+**Indexes:** `(vehicle_id, incurred_on)`; `(expense_category_id)`; `(trip_id)`.
+
+**Trip complete (ADR-053):** Dispatcher must log trip expense(s) into this table (with `trip_id`) in the same transaction as odometer + fuel_log + status flips.
+
+**Fuel & Expense screen (mockup):**  
+Fuel table from `fuel_logs`. “Other expenses” table: trip-linked `expenses` (toll/misc) **plus a computed column** `maint_linked` = sum of `maintenance_logs.cost_inr` for that vehicle (and/or period) — **read-only link**, not a second write of maintenance cost.
 
 ---
 
@@ -285,13 +355,22 @@ Non-maintenance, non-fuel operational costs (tolls, fines, misc).
 | storage_path        | text                 | NO   |                   | Local/public relative path         |
 | mime_type           | varchar(127)         | NO   |                   |                                    |
 | size_bytes          | bigint               | NO   |                   | ≥ 0                                |
-| uploaded_by_user_id | uuid                 | NO   |                   | **FK → users.id**                  |
+| uploaded_by_user_id | text                 | NO   |                   | **FK → user.id** (Better Auth)     |
 | created_at          | timestamptz          | NO   | now()             |                                    |
 | deleted_at          | timestamptz          | YES  | null              | Soft delete                        |
 
 **Indexes:** `(entity_type, entity_id)`.
 
 > Polymorphic `entity_id` as text is pragmatic for uuid + bigserial parents. App layer validates existence.
+
+**Upload policy (ADR-040) — not DB columns; app + ENV:**
+
+| ENV (suggested)       | Default         | Meaning                                   |
+| --------------------- | --------------- | ----------------------------------------- |
+| `UPLOAD_MAX_BYTES`    | `5242880` (5MB) | Max file size                             |
+| `UPLOAD_ALLOWED_MIME` | `*` (all types) | Comma-separated MIME list, or `*` for all |
+
+Validate on upload before write; reject oversize / disallowed type with clear error.
 
 ### `notification_outbox` (PK bigserial)
 
@@ -313,25 +392,27 @@ License expiry (and future) email pipeline.
 
 **Indexes:** `(status, scheduled_for)`.
 
+**Worker note (ADR-041):** Table is designed now; cron/worker that drains outbox is a **later task** — not v1 required behavior.
+
 ---
 
 ## 2.9 ER diagram (logical)
 
 ```mermaid
 erDiagram
-  users ||--o{ users : created_by
-  users ||--o{ vehicles : created_by
-  users ||--o{ drivers : created_by
-  users ||--o{ trips : created_by
-  users ||--o{ maintenance_logs : created_by
-  users ||--o{ fuel_logs : created_by
-  users ||--o{ expenses : created_by
-  users ||--o| drivers : "optional login"
+  user ||--o{ session : has
+  user ||--o{ account : has
+  user ||--o{ user : created_by
+  user ||--o{ vehicles : created_by
+  user ||--o{ drivers : created_by
+  user ||--o{ trips : created_by
+  user ||--o{ maintenance_logs : created_by
+  user ||--o{ fuel_logs : created_by
+  user ||--o{ expenses : created_by
+  user ||--o| drivers : "optional login"
 
   vehicle_types ||--o{ vehicles : type
   license_categories ||--o{ drivers : category
-  regions ||--o{ trips : source
-  regions ||--o{ trips : destination
   vehicles ||--o{ trips : assigned
   drivers ||--o{ trips : assigned
   vehicles ||--o{ maintenance_logs : service
@@ -349,43 +430,39 @@ erDiagram
 
 ## 2.10 Derived metrics (not stored tables)
 
-Computed in query/service layer for dashboard & reports:
+| Metric                         | Formula / definition                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| **Active vehicles**            | Non-retired count — `status != 'retired' AND deleted_at IS NULL` (ADR-035)     |
+| Available vehicles             | `status = available` AND not deleted                                           |
+| Vehicles in maintenance        | `status = in_shop`                                                             |
+| Active trips                   | `status = dispatched`                                                          |
+| Pending trips                  | `status = draft`                                                               |
+| Drivers on duty                | `status = on_trip`                                                             |
+| Fleet utilization %            | `(on_trip / (available + on_trip + in_shop)) × 100` — retired excluded         |
+| Fuel efficiency                | sum(actual_distance_km) / sum(fuel liters) per vehicle                         |
+| **Operational cost / vehicle** | **`SUM(fuel_logs.cost_inr) + SUM(maintenance_logs.cost_inr)`** (ADR-044)       |
+| Toll/misc expenses             | `SUM(expenses.amount_inr)` — **not** in operational cost auto total            |
+| Vehicle ROI / Monthly revenue  | **Static demo placeholders** for hackathon UI only (ADR-050); no revenue table |
 
-| Metric                     | Formula / definition                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------- |
-| Active vehicles            | status = on_trip (or count non-retired operational — confirm with KPI doc: PDF “Active Vehicles”) |
-| Available vehicles         | status = available AND not deleted                                                                |
-| Vehicles in maintenance    | status = in_shop                                                                                  |
-| Active trips               | status = dispatched                                                                               |
-| Pending trips              | status = draft                                                                                    |
-| Drivers on duty            | status = on_trip                                                                                  |
-| Fleet utilization %        | (on_trip / (available + on_trip + in_shop)) × 100 — **retired excluded**                          |
-| Fuel efficiency            | sum(actual_distance_km) / sum(fuel liters) per vehicle                                            |
-| Operational cost / vehicle | sum(fuel_logs.cost) + sum(maintenance_logs.cost) [+ optional expenses if report toggles]          |
-| Vehicle ROI                | **Deferred** — needs revenue (open question)                                                      |
+**Dashboard filters (v1):** **vehicle type + status only**. No region filter (ADR-043 / ADR-052).
 
-**KPI definition note:** Document exact “Active Vehicles” as `status IN ('available','on_trip','in_shop')` vs only `on_trip` at implementation; default recommendation:
-
-- **Active fleet size** = non-retired non-deleted
-- **On trip count** = status on_trip
-- **Available / In shop** = respective statuses
+**No Settings table** — currency INR and distance km are app constants (ADR-046).
 
 ---
 
 ## 2.11 Seed expectations (data, not code)
 
-Minimum seed for demo:
-
-1. One user per role (4 users) with known passwords.
-2. Master rows: ≥3 regions, ≥2 vehicle types, ≥2 license categories, ≥3 expense categories, ≥3 maintenance types.
-3. Sample vehicles/drivers in various statuses for dashboard.
+1. Four Better Auth users (one per role) + credential `account` rows.
+2. Masters: ≥2 vehicle types, ≥2 license categories, ≥3 expense categories (TOLL/FINE/MISC), ≥3 maintenance types.
+3. Sample vehicles/drivers/trips in various statuses for dashboard.
+4. Optional static analytics demo constants for ROI % / monthly revenue display.
 
 ---
 
 ## 2.12 Scaffold migration impact
 
-| Existing            | Action when implementing                      |
-| ------------------- | --------------------------------------------- |
-| `admin_users`       | Drop / migrate → `users` with roles           |
-| Auth model username | Move to email                                 |
-| Empty domain schema | Create all tables above in one migration plan |
+| Existing            | Action when implementing                    |
+| ------------------- | ------------------------------------------- |
+| `admin_users`       | Drop / replace with Better Auth core tables |
+| Auth username login | Email + password + role dropdown validation |
+| Empty domain schema | Create domain tables above (no regions)     |

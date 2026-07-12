@@ -1,82 +1,64 @@
 # 05 — RBAC Matrix (Locked)
 
-**Source of truth:** Product mockup (screenshot) + clarification answers (2026-07-12).
-
-PDF persona “Driver” = app role **`dispatcher`**. Field **`drivers`** are fleet profiles, not this role.
-
-## Legend
-
-| Symbol   | Meaning                                                                                             |
-| -------- | --------------------------------------------------------------------------------------------------- |
-| **✓**    | Full module access (create/read/update as makes sense for domain; no hard-delete of completed logs) |
-| **view** | Read-only                                                                                           |
-| **—**    | No access (hide nav + deny API)                                                                     |
-| **edit** | Update existing records (Safety on drivers)                                                         |
+**Source:** Excalidraw Settings RBAC grid + product clarifications.  
+PDF persona “Driver” = app role **`dispatcher`**.
 
 ## High-level matrix (mockup)
 
-| Role                  | Fleet (Vehicles) | Drivers  | Trips | Fuel / Expense | Analytics |
-| --------------------- | ---------------- | -------- | ----- | -------------- | --------- |
-| **Fleet Manager**     | ✓                | ✓        | —     | —              | ✓         |
-| **Dispatcher**        | view             | —        | ✓     | —              | —         |
-| **Safety Officer**    | —                | ✓ (edit) | view  | —              | —         |
-| **Financial Analyst** | view             | —        | —     | ✓              | ✓         |
+| Role                  | Fleet | Drivers | Trips | Fuel / Expense | Analytics |
+| --------------------- | ----- | ------- | ----- | -------------- | --------- |
+| **Fleet Manager**     | ✓     | ✓ full  | —     | —              | ✓         |
+| **Dispatcher**        | view  | —\*     | ✓     | —              | —         |
+| **Safety Officer**    | —     | ✓ full  | view  | —              | —         |
+| **Financial Analyst** | view  | —       | —     | ✓              | ✓         |
 
-## Extended modules (clarified; not on original sketch)
+\* Dispatcher reads **assignable** drivers only via trip form API.
 
-| Role                  | Maintenance          | Dashboard KPIs | Master data | Users           | Documents      | Notifications                  |
-| --------------------- | -------------------- | -------------- | ----------- | --------------- | -------------- | ------------------------------ |
-| **Fleet Manager**     | ✓ write (open/close) | view           | ✓ CRUD      | ✓ create/manage | ✓ vehicle docs | view/manage outbox optional    |
-| **Dispatcher**        | —                    | view           | —           | —               | —              | —                              |
-| **Safety Officer**    | —                    | view           | —           | —               | —              | — (recipients of policy later) |
-| **Financial Analyst** | **view costs only**  | view           | —           | —               | —              | —                              |
+## Extended modules
+
+| Role                  | Maintenance | Dashboard                  | Master data | Users | Documents | Settings screen  | Notifications cron |
+| --------------------- | ----------- | -------------------------- | ----------- | ----- | --------- | ---------------- | ------------------ |
+| **Fleet Manager**     | ✓ write     | view (type+status filters) | ✓           | ✓     | ✓         | **Out of scope** | later              |
+| **Dispatcher**        | —           | view                       | —           | —     | —         | —                | —                  |
+| **Safety Officer**    | —           | view                       | —           | —     | —         | —                | —                  |
+| **Financial Analyst** | view costs  | view                       | —           | —     | —         | —                | —                  |
+
+Mockup login access notes (aligned):
+
+- Fleet Manager → Fleet, Maintenance (+ analytics, users, masters)
+- Dispatcher → Dashboard, Trips
+- Safety Officer → Drivers, compliance (+ trip view)
+- Financial Analyst → Fuel & Expenses, Analytics
 
 ## Action-level detail
 
-### Fleet Manager (`fleet_manager`)
+### Fleet Manager
 
-- Vehicles: create, update, soft-delete, retire, list/filter
-- Drivers: create, update, soft-delete (status changes except safety-score ownership can be shared — **Safety owns safety_score & suspend preferred**; Fleet Manager may still set initial status)
-  - **Conflict resolve:** Safety Officer is authority for `safety_score`, `suspended` status, license fields; Fleet Manager creates drivers and may edit contact/name; both can read
-- Maintenance: open/close, set cost/vendor/odometer fields
-- Masters: regions, vehicle_types, license_categories, expense_categories, maintenance_types
-- Users: create users, set role, activate/deactivate
-- Analytics: utilization, costs (read), CSV
-- **Cannot:** create/dispatch/complete trips; create fuel/expense rows
+- Vehicles full CRUD/retire; drivers full edit; maintenance open/close; masters; users via Better Auth; analytics incl. **fuel+maintenance op cost**; documents.
+- **Cannot:** trip lifecycle; manual fuel/expense writes.
 
-### Dispatcher (`dispatcher`)
+### Dispatcher
 
-- Vehicles: **view** only (for selection)
-- Drivers: **no list manage**; may **read assignable drivers** via trip form API only (available + valid license) — not full driver admin
-- Trips: create draft, edit draft, dispatch, complete, cancel
-- On complete: enter end odometer, fuel liters, fuel cost → system writes `fuel_logs`
-- Dashboard: view
-- **Cannot:** maintenance write, expense/fuel manual screens, analytics deep reports, user admin
+- Vehicle view; trip full lifecycle; complete with odometer+fuel; dashboard.
+- **Cannot:** driver admin, maintenance write, fuel/expense screens, analytics deep, users.
 
-### Safety Officer (`safety_officer`)
+### Safety Officer
 
-- Drivers: edit compliance fields — license number/category/expiry, safety_score (0–100), suspend/unsuspend, contact
-- Trips: **view** (monitor)
-- Dashboard: view
-- **Cannot:** vehicles, fuel/expense, trip mutations, masters, users
+- Drivers full edit (same as FM on driver entity); trips view; dashboard.
+- **Cannot:** fleet write, fuel/expense, trip mutations, masters, users.
 
-### Financial Analyst (`financial_analyst`)
+### Financial Analyst
 
-- Vehicles: **view**
-- Fuel logs: create/edit manual entries; see auto trip fuel logs
-- Expenses: full create/edit
-- Maintenance: **view cost fields** for reporting (no open/close)
-- Analytics: operational cost, fuel efficiency, exports
-- Dashboard: view
-- **Cannot:** trip mutations, driver edits, vehicle writes, masters, users
+- Vehicle view; fuel logs full write; expenses (toll/misc) full write; maintenance **view costs**; analytics (op cost = fuel+maintenance, efficiency, CSV); static ROI placeholders if shown.
+- **Cannot:** trip mutations, driver edits, vehicle writes, masters, users.
 
-## API enforcement policy
+## Login
 
-1. **Every mutating endpoint** checks role server-side (never UI-only).
-2. Unauthorized → `403`.
-3. Unauthenticated → `401`.
-4. List endpoints must not leak forbidden modules’ sensitive fields beyond role (e.g. Safety doesn’t get expense totals APIs).
+- Role dropdown required on login UI; must match `user.role` (ADR-047).
+- Rate limit: 5 failed sign-ins / window (ADR-051).
 
-## Nav visibility (UI)
+## API enforcement
 
-Match matrix: hide modules with **—**. Show view-only modules as read UI without write buttons.
+1. Mutating endpoints check role server-side.
+2. 401 unauthenticated / 403 unauthorized / 429 rate limit.
+3. Hide nav for modules with **—**.
