@@ -181,7 +181,86 @@
   }
 }
 
+:root {
+  --trip-duration-exit: 180ms;
+  --trip-duration-enter: 280ms;
+  --trip-duration-move: 420ms;
+}
+
+@keyframes trip-fade-in {
+  from {
+    filter: blur(4px);
+    opacity: 0;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes trip-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes trip-slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+
+::view-transition-old(.trip-panel-exit) {
+  animation:
+    var(--trip-duration-exit) ease-in both trip-slide-out-right,
+    var(--trip-duration-exit) ease-in both trip-fade-in reverse;
+}
+
+::view-transition-new(.trip-panel-enter) {
+  animation:
+    var(--trip-duration-enter) ease-out var(--trip-duration-exit) both trip-slide-in-right,
+    var(--trip-duration-enter) ease-out var(--trip-duration-exit) both trip-fade-in;
+}
+
+::view-transition-old(.trip-board-shrink),
+::view-transition-new(.trip-board-shrink) {
+  animation-duration: var(--trip-duration-move);
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .trip-workspace-grid {
+    transition: none;
+  }
+}
+
 @layer utilities {
+  .trip-workspace-grid {
+    display: grid;
+    gap: 1rem;
+    transition: grid-template-columns var(--trip-duration-move) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .trip-panel-shell {
+    overflow: hidden;
+  }
+
   .landing-grid {
     background-image:
       linear-gradient(to right, oklch(0.6397 0.172 36.4421 / 0.06) 1px, transparent 1px),

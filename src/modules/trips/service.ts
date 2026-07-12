@@ -5,7 +5,15 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { SessionUser } from "@/lib/api/_types/session";
 import { requireAnyRole } from "@/lib/api/session";
 import { getDb } from "@/lib/db/client";
-import { drivers, expenses, fuelLogs, locations, trips, vehicles } from "@/lib/db/schema";
+import {
+  drivers,
+  expenses,
+  fuelLogs,
+  locations,
+  revenueLogs,
+  trips,
+  vehicles,
+} from "@/lib/db/schema";
 import {
   fetchAssignableDrivers,
   fetchAssignableVehicles,
@@ -21,6 +29,7 @@ import {
 import { assertDifferentLocations } from "@/modules/trips/_lib/trip-locations";
 import { toTripRecord } from "@/modules/trips/_lib/trip-mapper";
 import { fetchTripBundle, fetchTripList } from "@/modules/trips/_lib/trip-queries";
+import { buildTripRevenueSnapshot } from "@/modules/trips/_lib/trip-revenue";
 import {
   canCancelTrip,
   canCompleteTrip,
@@ -46,7 +55,13 @@ function todayIsoDate(): string {
 }
 
 function mapTripBundle(bundle: Awaited<ReturnType<typeof fetchTripBundle>>) {
-  return toTripRecord(bundle.trip, bundle.sourceLocation, bundle.destinationLocation);
+  return toTripRecord(
+    bundle.trip,
+    bundle.sourceLocation,
+    bundle.destinationLocation,
+    bundle.vehicle,
+    bundle.driver,
+  );
 }
 
 async function requireActiveLocations(sourceLocationId: string, destinationLocationId: string) {
@@ -119,7 +134,15 @@ export abstract class TripsService {
     const rows = await fetchTripList(getDb(), status);
 
     return {
-      trips: rows.map((row) => toTripRecord(row.trip, row.sourceLocation, row.destinationLocation)),
+      trips: rows.map((row) =>
+        toTripRecord(
+          row.trip,
+          row.sourceLocation,
+          row.destinationLocation,
+          row.vehicle,
+          row.driver,
+        ),
+      ),
     };
   }
 
@@ -131,10 +154,7 @@ export abstract class TripsService {
 
   static async create(actor: SessionUser, input: TripInput) {
     requireAnyRole(actor, TRIP_WRITE_ROLES);
-    const { sourceLocation, destinationLocation } = await requireActiveLocations(
-      input.sourceLocationId,
-      input.destinationLocationId,
-    );
+    await requireActiveLocations(input.sourceLocationId, input.destinationLocationId);
 
     const [created] = await getDb()
       .insert(trips)
@@ -154,9 +174,8 @@ export abstract class TripsService {
       throw new Error("Unable to create trip");
     }
 
-    return {
-      trip: toTripRecord(created, sourceLocation, destinationLocation),
-    };
+    const bundle = await fetchTripBundle(getDb(), created.id);
+    return { trip: mapTripBundle(bundle) };
   }
 
   static async update(actor: SessionUser, tripId: string, input: TripInput) {
@@ -168,10 +187,7 @@ export abstract class TripsService {
       throw new Error("Only draft trips can be edited");
     }
 
-    const { sourceLocation, destinationLocation } = await requireActiveLocations(
-      input.sourceLocationId,
-      input.destinationLocationId,
-    );
+    await requireActiveLocations(input.sourceLocationId, input.destinationLocationId);
 
     const [updated] = await getDb()
       .update(trips)
@@ -191,9 +207,8 @@ export abstract class TripsService {
       throw new Error("Trip not found");
     }
 
-    return {
-      trip: toTripRecord(updated, sourceLocation, destinationLocation),
-    };
+    const refreshed = await fetchTripBundle(getDb(), tripId);
+    return { trip: mapTripBundle(refreshed) };
   }
 
   static async dispatch(actor: SessionUser, tripId: string) {
@@ -394,6 +409,23 @@ export abstract class TripsService {
           createdByUserId: actor.id,
         });
       }
+
+      const revenue = buildTripRevenueSnapshot(
+        Number(tripRow.plannedDistanceKm),
+        Number(vehicleRow.maxLoadCapacityKg),
+      );
+      const earnedOn = todayIsoDate();
+
+      await tx.insert(revenueLogs).values({
+        tripId: tripRow.id,
+        vehicleId: tripRow.vehicleId,
+        plannedDistanceKm: revenue.plannedDistanceKm.toFixed(2),
+        capacityKg: revenue.capacityKg.toFixed(2),
+        rateInrPerKmKg: revenue.rateInrPerKmKg.toFixed(4),
+        amountInr: revenue.amountInr.toFixed(2),
+        earnedOn,
+        createdByUserId: actor.id,
+      });
 
       await tx
         .update(trips)

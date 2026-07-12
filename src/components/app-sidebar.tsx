@@ -42,7 +42,7 @@ const data = {
     },
     {
       title: "Trips",
-      url: "#",
+      url: "/trips",
       icon: <RouteIcon />,
     },
     {

@@ -12,8 +12,8 @@
 4. Open items only in `07-open-questions.md`
 5. Prefer Excalidraw mockup for UX flow questions
 
-**Last updated:** 2026-07-12 (UI: shadcn blocks-first ADR-054)  
-**Status:** Architecture locked for v1 (docs only until build starts)  
+**Last updated:** 2026-07-12 (Revenue model ADR-056)  
+**Status:** Architecture locked for v1 + trip revenue  
 **UI mockup:** Excalidraw (TransitOps platform board — project share link)  
 **Linear:** project docs — Architecture · Parallel Phases · UI Law (no absolute paths in repo)
 
@@ -28,7 +28,7 @@
 | [04-business-rules.md](./04-business-rules.md)   | Rules + op cost formula                           |
 | [05-rbac-matrix.md](./05-rbac-matrix.md)         | Role access                                       |
 | [06-domain-flows.md](./06-domain-flows.md)       | Workflows + trip complete sequence                |
-| [07-open-questions.md](./07-open-questions.md)   | Deferred: real revenue, notification cron         |
+| [07-open-questions.md](./07-open-questions.md)   | Deferred: notification cron (revenue resolved)    |
 | [08-ui-shadcn.md](./08-ui-shadcn.md)             | **UI law:** blocks → components; shadcn MCP first |
 
 ## Quick locks (current)
@@ -37,12 +37,13 @@
 | ----------------- | -------------------------------------------------------------------------- |
 | Op cost           | Fuel + maintenance                                                         |
 | Trip ends         | Free-text source/destination (regions ignored)                             |
-| Trip complete     | Odometer + fuel_log + **expenses required** + free vehicle/driver (atomic) |
+| Trip complete     | Odometer + fuel_log + **expenses required** + **revenue_log** + free fleet |
 | Trip completion % | On-the-fly API/FE calc — **not in DB**                                     |
 | Regions           | **Cancelled / ignore**                                                     |
-| Settings          | **Out of scope** (static INR, km)                                          |
+| Settings          | **Out of scope** (static INR, km, revenue rate constant)                   |
 | Login             | Email + password + **role dropdown** + 5-fail rate limit                   |
-| ROI revenue       | Static demo only / later                                                   |
+| Trip revenue      | `planned_km × capacity_kg × rate` → `revenue_logs` on complete (ADR-056)   |
+| ROI / monthly     | Real from `revenue_logs` + op cost + acquisition cost                      |
 | Auth              | Better Auth                                                                |
 
 ## Parallel phases & independent merge (for multi-dev)
@@ -68,7 +69,7 @@ Phase 2 (parallel):
 
 Phase 3 (after vehicles+drivers APIs):
   Trip API (26) → Trip UI (29)
-  [owns atomic complete: odometer + fuel_log + expenses + free fleet]
+  [owns atomic complete: odometer + fuel_log + expenses + revenue_log + free fleet]
 
 Phase 4+5 (parallel; after registry; trip complete path owned by 26):
   Stream C: Maintenance API (27) → UI (30)
@@ -90,7 +91,7 @@ Phase 7 (optional anytime):
 3. **Share only:** `lib/db`, auth session, `requireRole`, UI primitives, shell nav.
 4. **No cross-module service imports** — trips read vehicle/driver rows from DB; they do not call vehicle UI code.
 5. **Ownership:**
-   - Trip complete fuel/expense writes → **ODO-26 only**
+   - Trip complete fuel/expense/**revenue** writes → **ODO-26 / revenue tickets only**
    - Maintenance In Shop status → **ODO-27 only**
    - Auth middleware → **ODO-20 only**
 6. **Linear:** see project doc _TransitOps — Parallel Phases & Merge Guide_ for team split.
@@ -116,3 +117,4 @@ Demo gate: ODO-35 after core merges.
 - Settings screen removed from v1 scope
 - Driver trip-completion % not required
 - **Phase-by-phase + independent streams for multi-dev merge**
+- **Trip revenue model** (`revenue_logs`, ADR-056) — monthly charts + vehicle ROI from real data

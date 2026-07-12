@@ -7,6 +7,8 @@ import { getDb } from "@/lib/db/client";
 import { session, user } from "@/lib/db/schema";
 import type { UserRole } from "@/lib/db/schema/_types/roles";
 
+const DEV_BYPASS_DISPATCHER_ROLE = "dispatcher" satisfies UserRole;
+
 type SessionCookie = {
   value?: unknown;
 };
@@ -19,6 +21,57 @@ function extractSessionToken(cookie: SessionCookie | undefined): string | null {
   const token = cookie.value.trim();
 
   return token.length > 0 ? token : null;
+}
+
+function isDevAuthBypassEnabled(): boolean {
+  return Bun.env.API_DEV_AUTH_BYPASS === "true" && Bun.env.NODE_ENV !== "production";
+}
+
+async function resolveDevBypassUser(): Promise<SessionUser> {
+  const db = getDb();
+
+  const [dispatcher] = await db
+    .select({
+      email: user.email,
+      id: user.id,
+      name: user.name,
+      role: user.role,
+    })
+    .from(user)
+    .where(
+      and(
+        eq(user.role, DEV_BYPASS_DISPATCHER_ROLE),
+        eq(user.isActive, true),
+        sql`${user.deletedAt} is null`,
+      ),
+    )
+    .limit(1);
+
+  if (dispatcher) {
+    return dispatcher;
+  }
+
+  const adminEmail = (Bun.env.AUTH_ADMIN_EMAIL ?? "admin@example.com").trim();
+
+  const [seededAdmin] = await db
+    .select({
+      email: user.email,
+      id: user.id,
+      name: user.name,
+      role: user.role,
+    })
+    .from(user)
+    .where(and(eq(user.email, adminEmail), eq(user.isActive, true), sql`${user.deletedAt} is null`))
+    .limit(1);
+
+  if (!seededAdmin) {
+    throw new Error("Unauthorized");
+  }
+
+  return {
+    ...seededAdmin,
+    role: DEV_BYPASS_DISPATCHER_ROLE,
+  };
 }
 
 async function resolveUserIdFromToken(token: string): Promise<string | null> {
@@ -41,6 +94,10 @@ export async function requireUser(cookie: SessionCookie | undefined): Promise<Se
   const token = extractSessionToken(cookie);
 
   if (!token) {
+    if (isDevAuthBypassEnabled()) {
+      return resolveDevBypassUser();
+    }
+
     throw new Error("Unauthorized");
   }
 

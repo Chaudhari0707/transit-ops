@@ -6,6 +6,18 @@ const tripLocation = t.Object({
   name: t.String(),
 });
 
+const tripVehicle = t.Object({
+  id: t.String({ format: "uuid" }),
+  registrationNumber: t.String(),
+  nameModel: t.String(),
+  maxLoadCapacityKg: t.String(),
+});
+
+const tripDriver = t.Object({
+  id: t.String({ format: "uuid" }),
+  fullName: t.String(),
+});
+
 const trip = t.Object({
   id: t.String({ format: "uuid" }),
   status: t.Union([
@@ -16,6 +28,8 @@ const trip = t.Object({
   ]),
   sourceLocation: tripLocation,
   destinationLocation: tripLocation,
+  vehicle: tripVehicle,
+  driver: tripDriver,
   vehicleId: t.String({ format: "uuid" }),
   driverId: t.String({ format: "uuid" }),
   cargoWeightKg: t.String(),
