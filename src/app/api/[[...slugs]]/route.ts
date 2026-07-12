@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 
 import {
   analyticsModule,
+  dashboardModule,
   documentsModule,
   driversModule,
   fuelExpensesModule,
@@ -22,6 +23,7 @@ export const app = new Elysia({ prefix: "/api" })
   .use(tripsModule)
   .use(maintenanceModule)
   .use(fuelExpensesModule)
+  .use(dashboardModule)
   .use(analyticsModule)
   .use(documentsModule);
 
