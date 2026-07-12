@@ -35,7 +35,8 @@ test.describe("Analytics API (authenticated fleet manager)", () => {
     expect(body.summary.roiFormula).toContain("ROI");
     expect(body.summary.operationalCostInr).toMatch(/^\d+\.\d{2}$/);
     expect(body.summary.fleetUtilizationPercent).toMatch(/^\d+(\.\d+)?$/);
-    expect(body.summary.monthlyRevenueInr).toBe("400000.00");
+    // Real revenue from seeded revenue_logs (ADR-056) — not a hard-coded constant.
+    expect(Number(body.summary.monthlyRevenueInr)).toBeGreaterThan(0);
     expect(body.monthlyRevenue.length).toBeGreaterThanOrEqual(6);
     expect(Array.isArray(body.costliestVehicles)).toBe(true);
   });

@@ -64,15 +64,15 @@ Aligned with Excalidraw mockup screens 0–8.
 
 **Roles:** Fleet Manager + Financial Analyst (deep analytics). Other roles get 403 on API.
 
-| KPI                    | Formula / source                                                                |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| Fuel efficiency (km/L) | `SUM(completed trip.actual_distance_km) / SUM(fuel_logs.liters)`                |
-| Fleet utilization %    | `(on_trip / (available + on_trip + in_shop)) × 100` — retired excluded          |
-| Operational cost       | `SUM(fuel_logs.cost_inr) + SUM(maintenance_logs.cost_inr)` (ADR-044)            |
-| Vehicle ROI %          | `(static demo revenue − op cost) / SUM(non-retired acquisition_cost)` (ADR-050) |
-| Monthly revenue chart  | Static demo series (not live bookings)                                          |
-| Top costliest vehicles | Per-vehicle op cost, top 5                                                      |
-| CSV export             | `GET /api/analytics/export`                                                     |
+| KPI                    | Formula / source                                                              |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| Fuel efficiency (km/L) | `SUM(completed trip.actual_distance_km) / SUM(fuel_logs.liters)`              |
+| Fleet utilization %    | `(on_trip / (available + on_trip + in_shop)) × 100` — retired excluded        |
+| Operational cost       | `SUM(fuel_logs.cost_inr) + SUM(maintenance_logs.cost_inr)` (ADR-044)          |
+| Vehicle ROI %          | `(SUM(revenue_logs) − op cost) / SUM(non-retired acquisition_cost)` (ADR-056) |
+| Monthly revenue chart  | `SUM(revenue_logs.amount_inr)` by `earned_on` month                           |
+| Top costliest vehicles | Per-vehicle op cost, top 5                                                    |
+| CSV export             | `GET /api/analytics/export`                                                   |
 
 API: `GET /api/analytics/report`, `GET /api/analytics/summary`, `GET /api/analytics/export`.
 

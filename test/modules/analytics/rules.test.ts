@@ -4,6 +4,7 @@ import {
   assertAnalyticsReadRole,
   buildAnalyticsCsv,
   buildDemoMonthlyRevenueSeries,
+  buildMonthlyRevenueSeriesFromLogs,
   computeFleetUtilizationPercent,
   computeFuelEfficiencyKmPerL,
   computeOperationalCostInr,
@@ -93,6 +94,28 @@ describe("demo revenue series", () => {
     expect(series).toHaveLength(8);
     expect(series[0]?.yearMonth).toMatch(/^\d{4}-\d{2}$/);
     expect(Number(series.at(-1)?.revenueInr)).toBeGreaterThan(0);
+  });
+});
+
+describe("buildMonthlyRevenueSeriesFromLogs ADR-056", () => {
+  test("aggregates amounts by earned month", () => {
+    const series = buildMonthlyRevenueSeriesFromLogs(
+      [
+        { amountInr: "1000.00", earnedOn: "2026-05-18" },
+        { amountInr: "500.00", earnedOn: "2026-05-20" },
+        { amountInr: "2000.00", earnedOn: "2026-07-02" },
+      ],
+      3,
+      new Date(Date.UTC(2026, 6, 12)), // July 2026
+    );
+
+    expect(series).toHaveLength(3);
+    const may = series.find((m) => m.yearMonth === "2026-05");
+    const jun = series.find((m) => m.yearMonth === "2026-06");
+    const jul = series.find((m) => m.yearMonth === "2026-07");
+    expect(may?.revenueInr).toBe("1500.00");
+    expect(jun?.revenueInr).toBe("0.00");
+    expect(jul?.revenueInr).toBe("2000.00");
   });
 });
 

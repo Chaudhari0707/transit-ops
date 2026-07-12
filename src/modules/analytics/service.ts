@@ -4,11 +4,12 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 
 import { requireSessionUser } from "@/lib/auth/session";
 import { getDb } from "@/lib/db/client";
-import { fuelLogs, maintenanceLogs, trips, vehicles } from "@/lib/db/schema";
+import { fuelLogs, maintenanceLogs, revenueLogs, trips, vehicles } from "@/lib/db/schema";
 import {
   assertAnalyticsReadRole,
   buildAnalyticsCsv,
   buildDemoMonthlyRevenueSeries,
+  buildMonthlyRevenueSeriesFromLogs,
   computeFleetUtilizationPercent,
   computeFuelEfficiencyKmPerL,
   computeOperationalCostInr,
@@ -64,6 +65,24 @@ export abstract class AnalyticsService {
       .from(trips)
       .where(and(eq(trips.status, "completed"), isNull(trips.deletedAt)));
 
+    // Only count revenue for non-deleted trips (soft-deleted demo noise excluded).
+    const revenueRows = await db
+      .select({
+        amountInr: revenueLogs.amountInr,
+        earnedOn: revenueLogs.earnedOn,
+      })
+      .from(revenueLogs)
+      .innerJoin(trips, eq(revenueLogs.tripId, trips.id))
+      .where(isNull(trips.deletedAt));
+
+    const [revenueAgg] = await db
+      .select({
+        total: sql<string>`coalesce(sum(${revenueLogs.amountInr}), 0)`,
+      })
+      .from(revenueLogs)
+      .innerJoin(trips, eq(revenueLogs.tripId, trips.id))
+      .where(isNull(trips.deletedAt));
+
     const fuelByVehicle = await db
       .select({
         vehicleId: fuelLogs.vehicleId,
@@ -112,13 +131,13 @@ export abstract class AnalyticsService {
 
       if (opCost > 0) {
         costliestCandidates.push({
-          vehicleId: vehicle.id,
-          vehicleRegistration: vehicle.registrationNumber,
-          vehicleNameModel: vehicle.nameModel,
+          acquisitionCostInr: moneyToFixed(acquisition),
           fuelCostInr: moneyToFixed(fuelCost),
           maintenanceCostInr: moneyToFixed(maintCost),
           operationalCostInr: moneyToFixed(opCost),
-          acquisitionCostInr: moneyToFixed(acquisition),
+          vehicleId: vehicle.id,
+          vehicleNameModel: vehicle.nameModel,
+          vehicleRegistration: vehicle.registrationNumber,
         });
       }
     }
@@ -130,15 +149,22 @@ export abstract class AnalyticsService {
     const fuelLiters = Number(fuelAgg?.totalLiters ?? 0);
     const maintenanceTotal = Number(maintAgg?.totalCost ?? 0);
     const totalDistance = Number(distanceAgg?.totalDistance ?? 0);
+    const totalRevenue = Number(revenueAgg?.total ?? 0);
     const operationalCost = computeOperationalCostInr(fuelTotal, maintenanceTotal);
     const utilization = computeFleetUtilizationPercent({ available, onTrip, inShop });
     const efficiency = computeFuelEfficiencyKmPerL(totalDistance, fuelLiters);
+    const revenueForRoi = totalRevenue > 0 ? totalRevenue : STATIC_DEMO_MONTHLY_REVENUE_INR;
     const roi = computeVehicleRoiPercent({
-      revenueInr: STATIC_DEMO_MONTHLY_REVENUE_INR,
+      acquisitionCostInr: totalAcquisition,
       fuelCostInr: fuelTotal,
       maintenanceCostInr: maintenanceTotal,
-      acquisitionCostInr: totalAcquisition,
+      revenueInr: revenueForRoi,
     });
+
+    const monthlyRevenue =
+      revenueRows.length > 0
+        ? buildMonthlyRevenueSeriesFromLogs(revenueRows)
+        : buildDemoMonthlyRevenueSeries(STATIC_DEMO_MONTHLY_REVENUE_INR);
 
     const summary: AnalyticsSummary = {
       fleetUtilizationPercent: percentToFixed(utilization),
@@ -146,7 +172,9 @@ export abstract class AnalyticsService {
       fuelTotalInr: moneyToFixed(fuelTotal),
       fuelTotalLiters: moneyToFixed(fuelLiters),
       maintenanceTotalInr: moneyToFixed(maintenanceTotal),
-      monthlyRevenueInr: moneyToFixed(STATIC_DEMO_MONTHLY_REVENUE_INR),
+      monthlyRevenueInr: moneyToFixed(
+        totalRevenue > 0 ? totalRevenue : STATIC_DEMO_MONTHLY_REVENUE_INR,
+      ),
       operationalCostInr: moneyToFixed(operationalCost),
       roiFormula: ROI_FORMULA,
       totalAcquisitionCostInr: moneyToFixed(totalAcquisition),
@@ -157,7 +185,7 @@ export abstract class AnalyticsService {
 
     return {
       costliestVehicles,
-      monthlyRevenue: buildDemoMonthlyRevenueSeries(STATIC_DEMO_MONTHLY_REVENUE_INR),
+      monthlyRevenue,
       summary,
     };
   }
@@ -170,11 +198,11 @@ export abstract class AnalyticsService {
   static async exportCsv(headers: Headers): Promise<{ csv: string; filename: string }> {
     const report = await this.getReport(headers);
     const csv = buildAnalyticsCsv({
-      fuelEfficiencyKmPerL: report.summary.fuelEfficiencyKmPerL,
+      costliest: report.costliestVehicles,
       fleetUtilizationPercent: report.summary.fleetUtilizationPercent,
+      fuelEfficiencyKmPerL: report.summary.fuelEfficiencyKmPerL,
       operationalCostInr: report.summary.operationalCostInr,
       vehicleRoiPercent: report.summary.vehicleRoiPercent,
-      costliest: report.costliestVehicles,
     });
 
     const day = new Date().toISOString().slice(0, 10);

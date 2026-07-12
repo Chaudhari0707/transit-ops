@@ -1,12 +1,12 @@
 import type { UserRole } from "@/lib/auth/_types/user-role";
 
 /**
- * Demo monthly revenue for ROI (ADR-050).
- * Not persisted — real revenue source is deferred (OQ-01).
+ * Fallback when `revenue_logs` is empty (pre-seed or no completed trips).
+ * Prefer real sums from revenue_logs (ADR-056).
  */
 export const STATIC_DEMO_MONTHLY_REVENUE_INR = 400_000;
 
-/** Months of static demo revenue series for the analytics chart. */
+/** Months of revenue series for the analytics chart. */
 export const DEMO_REVENUE_MONTH_COUNT = 8;
 
 /**
@@ -122,9 +122,49 @@ export function efficiencyToFixed(value: number | null, digits = 1): string | nu
 }
 
 /**
- * Deterministic demo monthly revenue series for the bar chart (ADR-050).
- * Varied slightly month-to-month so the chart is not flat; not real bookings.
+ * Monthly revenue series from real `revenue_logs` rows (ADR-056).
+ * Groups by YYYY-MM of earned_on; fills empty months in range with 0.
  */
+export function buildMonthlyRevenueSeriesFromLogs(
+  rows: ReadonlyArray<{ amountInr: number | string; earnedOn: string }>,
+  monthCount = DEMO_REVENUE_MONTH_COUNT,
+  referenceDate: Date = new Date(),
+): Array<{ label: string; revenueInr: string; yearMonth: string }> {
+  const byMonth = new Map<string, number>();
+
+  for (const row of rows) {
+    const earned = row.earnedOn.trim().slice(0, 7); // YYYY-MM
+    if (!/^\d{4}-\d{2}$/.test(earned)) {
+      continue;
+    }
+    const amount = typeof row.amountInr === "number" ? row.amountInr : Number(row.amountInr);
+    byMonth.set(earned, (byMonth.get(earned) ?? 0) + (Number.isFinite(amount) ? amount : 0));
+  }
+
+  const count = Math.max(1, Math.min(24, monthCount));
+  const items: Array<{ label: string; revenueInr: string; yearMonth: string }> = [];
+
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const date = new Date(
+      Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth() - i, 1),
+    );
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const yearMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
+    const label = date.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+    const revenue = byMonth.get(yearMonth) ?? 0;
+
+    items.push({
+      label,
+      yearMonth,
+      revenueInr: moneyToFixed(revenue),
+    });
+  }
+
+  return items;
+}
+
+/** Fallback static series when no revenue logs exist yet. */
 export function buildDemoMonthlyRevenueSeries(
   baseRevenueInr: number,
   monthCount = DEMO_REVENUE_MONTH_COUNT,
@@ -133,8 +173,6 @@ export function buildDemoMonthlyRevenueSeries(
   const base = Number.isFinite(baseRevenueInr) && baseRevenueInr > 0 ? baseRevenueInr : 0;
   const count = Math.max(1, Math.min(24, monthCount));
   const items: Array<{ label: string; revenueInr: string; yearMonth: string }> = [];
-
-  // Slight multipliers so the chart has visual variance (static, not from DB).
   const multipliers = [0.82, 0.9, 0.88, 0.95, 0.92, 1.0, 1.08, 1.05, 0.98, 1.12, 1.1, 1.15];
 
   for (let i = count - 1; i >= 0; i -= 1) {
@@ -142,7 +180,7 @@ export function buildDemoMonthlyRevenueSeries(
       Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth() - i, 1),
     );
     const year = date.getUTCFullYear();
-    const month = date.getUTCMonth(); // 0-based
+    const month = date.getUTCMonth();
     const yearMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
     const label = date.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
     const mult = multipliers[month] ?? 1;
