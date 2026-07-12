@@ -60,6 +60,22 @@ Aligned with Excalidraw mockup screens 0–8.
 - Filters: type + status. **No region filter.**
 - ROI / monthly revenue: **static placeholders** for demo.
 
+## Flow I — Reports & Analytics (`/analytics`)
+
+**Roles:** Fleet Manager + Financial Analyst (deep analytics). Other roles get 403 on API.
+
+| KPI                    | Formula / source                                                                |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| Fuel efficiency (km/L) | `SUM(completed trip.actual_distance_km) / SUM(fuel_logs.liters)`                |
+| Fleet utilization %    | `(on_trip / (available + on_trip + in_shop)) × 100` — retired excluded          |
+| Operational cost       | `SUM(fuel_logs.cost_inr) + SUM(maintenance_logs.cost_inr)` (ADR-044)            |
+| Vehicle ROI %          | `(static demo revenue − op cost) / SUM(non-retired acquisition_cost)` (ADR-050) |
+| Monthly revenue chart  | Static demo series (not live bookings)                                          |
+| Top costliest vehicles | Per-vehicle op cost, top 5                                                      |
+| CSV export             | `GET /api/analytics/export`                                                     |
+
+API: `GET /api/analytics/report`, `GET /api/analytics/summary`, `GET /api/analytics/export`.
+
 ## Flow H — Trip complete sequence (final — ADR-053)
 
 Mockup: _“On Complete: odometer → fuel log → expenses → Vehicle & Driver Available”_

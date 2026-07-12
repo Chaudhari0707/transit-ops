@@ -48,6 +48,23 @@ Fuel efficiency:
 efficiency_km_per_liter = SUM(trip.actual_distance_km) / SUM(fuel_logs.liters)
 ```
 
+Exposed on:
+
+- `GET /api/fuel-expenses/summary` → `fuelEfficiencyKmPerL`
+- `GET /api/analytics/report` → summary KPIs + CSV export
+
+Fleet utilization (analytics):
+
+```
+utilization_percent = (on_trip / (available + on_trip + in_shop)) × 100
+```
+
+Vehicle ROI (PDF §3.8; revenue static demo — ADR-050):
+
+```
+roi_percent = (demo_revenue − (fuel + maintenance)) / SUM(acquisition_cost_inr) × 100
+```
+
 ## Trip complete sequence (ADR-053)
 
 See [06-domain-flows.md](./06-domain-flows.md) § Flow H.

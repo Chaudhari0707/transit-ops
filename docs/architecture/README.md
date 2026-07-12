@@ -12,7 +12,7 @@
 4. Open items only in `07-open-questions.md`
 5. Prefer Excalidraw mockup for UX flow questions
 
-**Last updated:** 2026-07-12 (UI: shadcn blocks-first ADR-054)  
+**Last updated:** 2026-07-12 (Analytics `/analytics` + fuel efficiency calc)  
 **Status:** Architecture locked for v1 (docs only until build starts)  
 **UI mockup:** Excalidraw (TransitOps platform board — project share link)  
 **Linear:** project docs — Architecture · Parallel Phases · UI Law (no absolute paths in repo)

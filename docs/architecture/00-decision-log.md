@@ -59,6 +59,7 @@ Append-only style. Do not rewrite history; supersede with a new ADR row.
 | ADR-052 | 2026-07-12 | Dashboard filters        | **Vehicle type + status only** (no region)                                                                  | Excalidraw had region; cancelled with ADR-043                                       |
 | ADR-054 | 2026-07-12 | UI stack                 | **shadcn only**; **blocks first** (`login-02`, `dashboard-01`); else components; **MCP first**              | No custom UI libs; see `08-ui-shadcn.md`                                            |
 | ADR-055 | 2026-07-12 | Trip locations           | **`locations` table** replaces free-text source/destination; FK on trips; source ≠ destination              | Dispatcher dropdowns; fleet manager can add locations                               |
+| ADR-056 | 2026-07-12 | Reports & Analytics      | Route `/analytics`; API `/api/analytics/*`; KPIs: efficiency, utilization, op cost, ROI (static revenue)    | PDF §3.8 + Excalidraw screen 7; FM + FA only; CSV export                            |
 
 ## Scaffold note (migration intent)
 

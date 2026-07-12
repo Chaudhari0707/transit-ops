@@ -187,7 +187,7 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end justify-between gap-4">
-            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
               <div>
                 <div className="text-muted-foreground">Fuel</div>
                 <div className="font-semibold tabular-nums">{formatInr(summary.fuelTotalInr)}</div>
@@ -202,6 +202,12 @@ export function FuelExpensesPageClient({ canWrite }: FuelExpensesPageClientProps
                 <div className="text-muted-foreground">Toll / misc</div>
                 <div className="font-semibold tabular-nums">
                   {formatInr(summary.expensesTotalInr)}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Fuel efficiency</div>
+                <div className="font-semibold tabular-nums">
+                  {summary.fuelEfficiencyKmPerL ? `${summary.fuelEfficiencyKmPerL} km/L` : "—"}
                 </div>
               </div>
               <div>
