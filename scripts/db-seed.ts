@@ -8,6 +8,7 @@ import {
   withDatabase,
 } from "./runtime";
 import { FLEET_DRIVER_SEEDS, FLEET_VEHICLE_SEEDS } from "./seed-fleet-data";
+import { LOCATION_SEEDS } from "./seed-locations-data";
 
 const MASTER_SEEDS = {
   expense_categories: [
@@ -214,6 +215,24 @@ const program = Effect.gen(function* () {
       yield* Console.log(`      Role     : fleet_manager`);
       yield* Console.log(`      Record ID: ${result.id}`);
 
+      yield* Console.log("\n📍  Location master data:");
+      for (const location of LOCATION_SEEDS) {
+        yield* Effect.tryPromise({
+          try: () =>
+            sql`
+              INSERT INTO locations (id, code, name, is_active, created_at, updated_at)
+              SELECT gen_random_uuid(), ${location.code}, ${location.name}, TRUE, NOW(), NOW()
+              WHERE NOT EXISTS (
+                SELECT 1 FROM locations l
+                WHERE l.code = ${location.code} AND l.deleted_at IS NULL
+              )
+            `,
+          catch: (error) =>
+            new Error(getErrorMessage(error, `Failed to seed location ${location.code}.`)),
+        });
+      }
+      yield* Console.log(`   ✓ locations (${LOCATION_SEEDS.length})`);
+
       yield* Console.log("\n🚛  Fleet sample data:");
       yield* seedFleetVehicles(sql, result.id);
       yield* seedFleetDrivers(sql, result.id);
@@ -221,7 +240,7 @@ const program = Effect.gen(function* () {
   );
 
   yield* Console.log(
-    `\n✅  Seed complete — masters, fleet_manager, ${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers.\n`,
+    `\n✅  Seed complete — masters, ${LOCATION_SEEDS.length} locations, fleet_manager, ${FLEET_VEHICLE_SEEDS.length} vehicles, ${FLEET_DRIVER_SEEDS.length} drivers.\n`,
   );
 });
 
