@@ -1,3 +1,5 @@
+import "@/lib/runtime/bun-env-polyfill";
+
 import { Elysia } from "elysia";
 
 import {

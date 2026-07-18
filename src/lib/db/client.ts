@@ -1,3 +1,5 @@
+import "@/lib/runtime/bun-env-polyfill";
+
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
