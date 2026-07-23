@@ -129,7 +129,13 @@ function getTrustedOrigins() {
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
 
-  return configured && configured.length > 0 ? configured : undefined;
+  if (configured && configured.length > 0) {
+    return configured;
+  }
+
+  const appOrigin = getAppOrigin();
+
+  return appOrigin ? [appOrigin] : undefined;
 }
 
 function getAuthSecret() {
@@ -143,13 +149,26 @@ function getAuthSecret() {
 }
 
 function getBaseUrl() {
-  const baseUrl = Bun.env.BETTER_AUTH_URL?.trim() ?? Bun.env.NEXT_PUBLIC_APP_URL?.trim();
+  const baseUrl =
+    Bun.env.BETTER_AUTH_URL?.trim() ?? Bun.env.NEXT_PUBLIC_APP_URL?.trim() ?? getAppOrigin();
 
   if (!baseUrl) {
     throw new Error("BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL is required.");
   }
 
   return baseUrl;
+}
+
+function getAppOrigin() {
+  const vercelUrl = Bun.env.VERCEL_URL?.trim();
+
+  if (!vercelUrl) {
+    return undefined;
+  }
+
+  return vercelUrl.startsWith("http://") || vercelUrl.startsWith("https://")
+    ? vercelUrl
+    : `https://${vercelUrl}`;
 }
 
 export const auth = new Proxy({} as AuthInstance, {
